@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Library Portfolio</title>
+    <style>
+        /* --- TEMEL AYARLAR & DARK MODE --- */
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: #111827; /* Çok koyu gri arka plan */
+            color: #e5e7eb; /* Açık gri yazı */
+            margin: 0; padding: 20px; 
+        }
+        
+        h1, h2, h3 { margin-top: 0; }
+        button { cursor: pointer; transition: 0.2s; }
+
+        /* --- CONTAINER YAPISI --- */
+        .container { max-width: 1200px; margin: 0 auto; }
+        .hidden { display: none !important; }
+
+        /* --- INPUT & FORM STİLLERİ --- */
+        input {
+            width: 100%; padding: 12px; margin-bottom: 10px;
+            background-color: #1f2937; border: 1px solid #374151;
+            color: white; border-radius: 6px; box-sizing: border-box;
+        }
+        input:focus { outline: none; border-color: #3b82f6; }
+
+        .btn {
+            padding: 10px 20px; border: none; border-radius: 6px;
+            font-weight: bold; color: white; width: 100%;
+        }
+        .btn-blue { background-color: #2563eb; }
+        .btn-blue:hover { background-color: #1d4ed8; }
+        .btn-green { background-color: #10b981; }
+        .btn-green:hover { background-color: #059669; }
+        .btn-red { background-color: #ef4444; width: auto; padding: 5px 10px; font-size: 11px;}
+        .btn-red:hover { background-color: #dc2626; }
+
+        /* --- LOGIN / REGISTER KARTLARI --- */
+        .auth-container {
+            display: flex; justify-content: center; align-items: center;
+            height: 80vh; gap: 20px;
+        }
+        .card {
+            background-color: #1f2937; padding: 30px;
+            border-radius: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+            border: 1px solid #374151; width: 350px;
+        }
+
+        /* --- DASHBOARD GRID YAPISI (Bento Grid) --- */
+        .dashboard-grid {
+            display: grid; grid-template-columns: 320px 1fr; gap: 20px;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        /* --- PROFİL KARTI --- */
+        .profile-card {
+            background-color: #1f2937; padding: 20px; border-radius: 12px;
+            border: 1px solid #374151; height: fit-content;
+        }
+        .stat-box {
+            background-color: #374151; padding: 15px; border-radius: 8px;
+            margin: 15px 0; text-align: center;
+        }
+        .fine-text { color: #f87171; font-size: 24px; font-family: monospace; font-weight: bold; }
+        
+        .loan-item {
+            background: #111827; padding: 10px; margin-bottom: 8px;
+            border-radius: 6px; font-size: 14px; 
+            border-left: 3px solid #3b82f6;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* --- KİTAP LİSTESİ --- */
+        .search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .books-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px;
+        }
+        .book-card {
+            background-color: #1f2937; padding: 15px; border-radius: 8px;
+            border: 1px solid #374151; position: relative;
+        }
+        .book-card h4 { margin-bottom: 5px; color: #fff; }
+        .book-card p { font-size: 13px; color: #9ca3af; margin: 0; }
+        .status-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 11px; margin-top: 10px;
+        }
+        .status-ok { background-color: #064e3b; color: #6ee7b7; }
+        .status-out { background-color: #450a0a; color: #fca5a5; }
+        
+        .action-area { margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="authSection" class="auth-container">
+        <div class="card">
+            <h2 style="text-align:center; color:#60a5fa;">Giriş Yap</h2>
+            <input type="text" id="loginEmail" placeholder="Email Adresi">
+            <input type="password" id="loginPass" placeholder="Şifre">
+            <button class="btn btn-blue" onclick="handleLogin()">Giriş Yap</button>
+        </div>
+        
+        <div class="card">
+            <h2 style="text-align:center; color:#34d399;">Kayıt Ol</h2>
+            <input type="text" id="regName" placeholder="Ad">
+            <input type="text" id="regSurname" placeholder="Soyad">
+            <input type="text" id="regEmail" placeholder="Email">
+            <input type="password" id="regPass" placeholder="Şifre">
+            <button class="btn btn-green" onclick="handleRegister()">Kayıt Ol</button>
+        </div>
+    </div>
+
+    <div id="dashboardSection" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1 style="background: linear-gradient(to right, #60a5fa, #34d399); -webkit-background-clip: text; color: transparent;">
+                📚 Kütüphane Portfolyo
+            </h1>
+            <button onclick="logout()" style="background:none; border:1px solid #666; color:#ccc; padding:5px 15px; border-radius:4px;">Çıkış</button>
+        </div>
+
+        <div class="dashboard-grid">
+            
+            <div class="profile-card">
+                <h3 id="userNameDisplay">Kullanıcı Adı</h3>
+                <p id="userEmailDisplay" style="color:#9ca3af; font-size:14px;">email@ornek.com</p>
+                
+                <div class="stat-box">
+                    <div style="font-size:12px; text-transform:uppercase; color:#9ca3af;">Toplam Ceza</div>
+                    <div class="fine-text">0.00 TL</div>
+                </div>
+
+                <h4 style="border-bottom:1px solid #374151; padding-bottom:10px; margin-bottom:15px;">Ödünç Aldıklarım</h4>
+                <div id="myLoansList">
+                    <p style="font-size:12px; color:#666;">Yükleniyor...</p>
+                </div>
+            </div>
+
+            <div>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Kitap adı, yazar veya ISBN ara...">
+                    <button class="btn btn-blue" style="width: auto;" onclick="searchBooks()">Ara</button>
+                </div>
+
+                <div id="booksGrid" class="books-grid">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- KONFİGÜRASYON ---
+    const API_BASE = "http://localhost:8080/api";
+    let currentUser = null;
+    let allBooks = []; 
+
+    // --- 1. AUTH İŞLEMLERİ (GİRİŞ / KAYIT) ---
+
+    async function handleRegister() {
+        const member = {
+            firstName: document.getElementById("regName").value, 
+            lastName: document.getElementById("regSurname").value,
+            email: document.getElementById("regEmail").value,
+            password: document.getElementById("regPass").value
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/members/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(member)
+            });
+            
+            if(res.ok) {
+                alert("Kayıt Başarılı! Şimdi giriş yapabilirsiniz.");
+                // Inputları temizle
+                document.getElementById("regName").value = "";
+                document.getElementById("regSurname").value = "";
+                document.getElementById("regEmail").value = "";
+                document.getElementById("regPass").value = "";
+            } else {
+                const errorMsg = await res.text();
+                alert("Kayıt başarısız! Hata: " + (errorMsg || "Bilinmeyen hata"));
+            }
+        } catch (e) { console.error(e); alert("Sunucu ile bağlantı kurulamadı."); }
+    }
+
+    async function handleLogin() {
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPass").value;
+
+        try {
+            const res = await fetch(`${API_BASE}/members/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+
+            if(res.ok) {
+                currentUser = await res.json();
+                showDashboard();
+            } else {
+                alert("Hatalı email veya şifre!");
+            }
+        } catch (e) { console.error(e); alert("Sunucu ile bağlantı kurulamadı."); }
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById("dashboardSection").classList.add("hidden");
+        document.getElementById("authSection").classList.remove("hidden");
+    }
+
+    // --- 2. DASHBOARD YÖNETİMİ ---
+
+    function showDashboard() {
+        document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+
+        // İsim Soyisim Doldur
+        document.getElementById("userNameDisplay").innerText = `${currentUser.firstName} ${currentUser.lastName}`;
+        document.getElementById("userEmailDisplay").innerText = currentUser.email;
+
+        // Verileri Çek
+        loadAllBooks(); 
+        loadMyLoans(); 
+    }
+
+    // --- 3. KİTAP İŞLEMLERİ (LİSTELEME & ARAMA) ---
+
+    async function loadAllBooks() {
+        try {
+            const res = await fetch(`${API_BASE}/books`); 
+            allBooks = await res.json();
+            renderBooks(allBooks);
+        } catch (e) { console.error("Kitaplar yüklenemedi", e); }
+    }
+
+    function renderBooks(books) {
+        const grid = document.getElementById("booksGrid");
+        grid.innerHTML = "";
+
+        if(books.length === 0) {
+            grid.innerHTML = "<p style='color:#666;'>Kitap bulunamadı.</p>";
+            return;
+        }
+
+        books.forEach(book => {
+            // Kitabın durumu backend'den 'available' (true/false) olarak geliyor
+            const isAvailable = book.available; 
+            const statusClass = isAvailable ? "status-ok" : "status-out";
+            const statusText = isAvailable ? "Müsait" : "Ödünçte";
+
+            const card = `
+                <div class="book-card">
+                    <h4>${book.title}</h4>
+                    <p>✍️ ${book.author}</p>
+                    <p>📅 ${book.publicationYear}</p>
+                    <div class="action-area">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <button 
+                            onclick="borrowBook(${book.id})" 
+                            class="btn btn-blue" 
+                            style="width:auto; padding:5px 15px; font-size:12px;"
+                            ${!isAvailable ? 'disabled style="background-color:#4b5563; cursor:not-allowed;"' : ''}
+                        >
+                            Ödünç Al
+                        </button>
+                    </div>
+                </div>
+            `;
+            grid.innerHTML += card;
+        });
+    }
+
+    function searchBooks() {
+        const query = document.getElementById("searchInput").value.toLowerCase();
+        const filtered = allBooks.filter(book => 
+            book.title.toLowerCase().includes(query) || 
+            book.author.toLowerCase().includes(query) ||
+            book.isbn.includes(query)
+        );
+        renderBooks(filtered);
+    }
+
+    // --- 4. ÖDÜNÇ ALMA İŞLEMİ ---
+
+    async function borrowBook(bookId) {
+        if(!currentUser) return;
+        
+        try {
+            const res = await fetch(`${API_BASE}/loans/borrow`, { 
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    memberId: currentUser.id, 
+                    bookId: bookId 
+                })
+            });
+
+            if(res.ok) {
+                alert("Kitap başarıyla ödünç alındı! 🎉");
+                loadAllBooks(); // Kitabın durumunu 'Ödünçte' yapmak için
+                loadMyLoans();  // Sol listeye eklemek için
+            } else {
+                const errorMsg = await res.text();
+                alert("HATA: " + errorMsg);
+            }
+        } catch (e) { 
+            console.error(e); 
+            alert("İşlem sırasında hata oluştu."); 
+        }
+    }
+
+    // --- 5. ÖDÜNÇ ALINANLARI LİSTELEME VE İADE ETME ---
+
+    async function loadMyLoans() {
+        if (!currentUser) return;
+
+        try {
+            // Backend'e eklediğimiz endpoint'i çağırıyoruz: /api/loans/member/{id}
+            const res = await fetch(`${API_BASE}/loans/member/${currentUser.id}`);
+            const loans = await res.json();
+            
+            const listDiv = document.getElementById("myLoansList");
+            listDiv.innerHTML = "";
+            
+            if (loans.length === 0) {
+                listDiv.innerHTML = "<p style='font-size:12px; color:#666;'>Henüz kitap almadınız.</p>";
+                // Ceza 0
+                document.querySelector(".fine-text").innerText = "0.00 TL";
+                return;
+            }
+
+            let totalPenalty = 0;
+
+            loans.forEach(loan => {
+                // Eğer returnDate null ise kitap hala üyededir (Aktif)
+                const isActive = loan.returnDate === null; 
+                const bookTitle = loan.book ? loan.book.title : "Bilinmeyen Kitap";
+                
+                // Cezayı topla
+                if(loan.penalty) totalPenalty += loan.penalty;
+
+                let actionHtml = "";
+                if (isActive) {
+                    // İade Et butonu (Kırmızı)
+                    actionHtml = `
+                        <button onclick="returnBook(${loan.id})" class="btn btn-red">
+                            İade Et
+                        </button>
+                    `;
+                } else {
+                    actionHtml = `<span style="color:#10b981; font-size:10px;">İade Edildi</span>`;
+                }
+
+                const item = `
+                    <div class="loan-item">
+                        <div>
+                            <div style="font-weight:bold; color:#e5e7eb;">${bookTitle}</div>
+                            <div style="font-size:11px; color:#9ca3af;">Tarih: ${loan.loanDate}</div>
+                        </div>
+                        ${actionHtml}
+                    </div>
+                `;
+                listDiv.innerHTML += item;
+            });
+
+            // Toplam cezayı güncelle
+            document.querySelector(".fine-text").innerText = totalPenalty.toFixed(2) + " TL";
+
+        } catch (e) {
+            console.error("Ödünç listesi çekilemedi:", e);
+        }
+    }
+
+    // Kitap İade Fonksiyonu
+    async function returnBook(loanId) {
+        if(!confirm("Bu kitabı iade etmek istiyor musunuz?")) return;
+
+        try {
+            // Backend'e PUT isteği at
+            const res = await fetch(`${API_BASE}/loans/${loanId}/return`, {
+                method: "PUT"
+            });
+
+            if (res.ok) {
+                const updatedLoan = await res.json();
+                
+                if (updatedLoan.penalty > 0) {
+                    alert(`Kitap iade edildi. Gecikme Cezası: ${updatedLoan.penalty} TL`);
+                } else {
+                    alert("Kitap zamanında iade edildi. Teşekkürler! ✅");
+                }
+
+                loadMyLoans();  // Listeyi güncelle (Buton kalksın)
+                loadAllBooks(); // Kitap artık "Müsait" olsun
+            } else {
+                const err = await res.text();
+                alert("İade Hatası: " + err);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Sunucu hatası.");
+        }
+    }
+
+</script>
+
+</body>
+</html>
