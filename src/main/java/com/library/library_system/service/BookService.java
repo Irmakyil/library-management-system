@@ -32,6 +32,10 @@ public class BookService {
         return bookRepository.findById(id).orElse(null);
     }
 
+    public List<Book> getBooksByCategory(Long categoryId) {
+        return bookRepository.findByCategoryId(categoryId);
+    }
+
     public List<Book> searchBooks(String query) {
         // Gelen arama kelimesini hem başlıkta hem yazarda arar
         return bookRepository.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(query, query);

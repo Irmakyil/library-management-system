@@ -15,4 +15,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     // "IgnoreCase": Büyük/küçük harf fark etmez
     List<Book> findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(String title, String author);
 
+    // "Category" nesnesinin "Id" alanına göre bul.
+    List<Book> findByCategoryId(Long categoryId);
+
 }

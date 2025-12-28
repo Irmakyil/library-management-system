@@ -39,4 +39,11 @@ public class BookController {
     public List<Book> searchBooks(@RequestParam String query) {
         return bookService.searchBooks(query);
     }
+
+    // GET: /api/books/category/{id}
+    @GetMapping("/category/{categoryId}")
+    public List<Book> getBooksByCategory(@org.springframework.web.bind.annotation.PathVariable Long categoryId) {
+        return bookService.getBooksByCategory(categoryId);
+    }
+
 }

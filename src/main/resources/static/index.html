@@ -28,6 +28,18 @@
         }
         input:focus { outline: none; border-color: #3b82f6; }
 
+        /* SELECT KUTUSU STİLİ */
+        select {
+            width: 200px; /* Genişlik ayarı */
+            padding: 12px;
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        select:focus { outline: none; border-color: #3b82f6; }
+
         .btn {
             padding: 10px 20px; border: none; border-radius: 6px;
             font-weight: bold; color: white; width: 100%;
@@ -147,6 +159,10 @@
 
             <div>
                 <div class="search-bar">
+                    <select id="categorySelect" onchange="filterByCategory()">
+                        <option value="all">Tüm Kategoriler</option>
+                        </select>
+
                     <input type="text" id="searchInput" placeholder="Kitap adı, yazar veya ISBN ara...">
                     <button class="btn btn-blue" style="width: auto;" onclick="searchBooks()">Ara</button>
                 </div>
@@ -235,6 +251,7 @@
         // Verileri Çek
         loadAllBooks(); 
         loadMyLoans(); 
+        loadCategories();
     }
 
     // --- 3. KİTAP İŞLEMLERİ (LİSTELEME & ARAMA) ---
@@ -292,6 +309,54 @@
             book.isbn.includes(query)
         );
         renderBooks(filtered);
+    }
+
+        // --- KATEGORİ FİLTRELEME İŞLEMLERİ ---
+
+    // 1. Kategorileri Backend'den Çekip Dropdown'a Doldurur
+    async function loadCategories() {
+        try {
+            const res = await fetch(`${API_BASE}/categories`);
+            const categories = await res.json();
+
+            const selectBox = document.getElementById("categorySelect");
+            // İlk seçenek hariç temizle
+            selectBox.innerHTML = '<option value="all">Tüm Kategoriler</option>';
+
+            categories.forEach(cat => {
+                const option = document.createElement("option");
+                option.value = cat.id;
+                option.text = cat.name;
+                selectBox.appendChild(option);
+            });
+        } catch (e) {
+            console.error("Kategoriler yüklenemedi:", e);
+        }
+    }
+
+    // 2. Seçim Yapıldığında Kitapları Filtreler
+    async function filterByCategory() {
+        const categoryId = document.getElementById("categorySelect").value;
+
+        // Eğer "Tüm Kategoriler" seçildiyse hepsini getir
+        if (categoryId === 'all') {
+            loadAllBooks();
+            return;
+        }
+
+        // Seçili kategoriye göre getir
+        try {
+            const res = await fetch(`${API_BASE}/books/category/${categoryId}`);
+            const filteredBooks = await res.json();
+
+            // Mevcut render fonksiyonunu kullanarak ekrana bas
+            renderBooks(filteredBooks);
+
+            // Global listeyi güncelle (arama yaparsa bu liste üzerinden yapsın diye)
+            allBooks = filteredBooks; 
+        } catch (e) {
+            console.error("Filtreleme hatası:", e);
+        }
     }
 
     // --- 4. ÖDÜNÇ ALMA İŞLEMİ ---

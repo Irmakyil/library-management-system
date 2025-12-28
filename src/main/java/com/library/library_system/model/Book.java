@@ -10,6 +10,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.FetchType;
 
 @Entity // Bu class'ın bir veritabanı tablosu olduğunu söyler
 @Table(name = "books") // Veritabanında tablonun adı 'books' olsun
@@ -37,16 +40,21 @@ public class Book {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @ManyToOne(fetch = FetchType.EAGER) // Kitabı çekerken kategoriyi de getir
+    @JoinColumn(name = "category_id") // Veritabanında 'category_id' adında bir sütun oluşacak
+    private Category category;
+
     // --- Constructor (Boş) ---
     public Book() {
     }
 
     // --- Constructor (Dolu) ---
-    public Book(String title, String author, String isbn, int publicationYear) {
+    public Book(String title, String author, String isbn, int publicationYear, Category category) {
         this.title = title;
         this.author = author;
         this.isbn = isbn;
         this.publicationYear = publicationYear;
+        this.category = category;
         this.available = true;
     }
 
@@ -72,6 +80,9 @@ public class Book {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
 
     @PreUpdate
     @PrePersist
