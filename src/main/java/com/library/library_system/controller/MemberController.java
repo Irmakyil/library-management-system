@@ -58,7 +58,12 @@ public class MemberController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteMember(@PathVariable Long id) {
-    memberService.deleteMember(id);
-    return ResponseEntity.ok("Üye başarıyla silindi.");
+        memberService.deleteMember(id);
+        return ResponseEntity.ok("Üye başarıyla silindi.");
+    }
+
+    @GetMapping("/search")
+    public List<Member> searchMembers(@org.springframework.web.bind.annotation.RequestParam String query) {
+        return memberService.searchMembers(query);
     }
 }

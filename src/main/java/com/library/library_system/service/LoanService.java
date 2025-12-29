@@ -20,7 +20,8 @@ public class LoanService {
     private final BookRepository bookRepository;
     private final MemberRepository memberRepository;
 
-    public LoanService(LoanRepository loanRepository, BookRepository bookRepository, MemberRepository memberRepository) {
+    public LoanService(LoanRepository loanRepository, BookRepository bookRepository,
+            MemberRepository memberRepository) {
         this.loanRepository = loanRepository;
         this.bookRepository = bookRepository;
         this.memberRepository = memberRepository;
@@ -37,20 +38,20 @@ public class LoanService {
 
     // --- ÖDÜNÇ ALMA İŞLEMİ ---
     public Loan createLoan(Long bookId, Long memberId) {
-        // 1. Kitabı bul
+        // Kitabı bul
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
-        
+
         // Kitap zaten başkasında mı?
         if (!book.isAvailable()) {
             throw new RuntimeException("Bu kitap şu an stokta yok!");
         }
 
-        // 2. Üyeyi bul
+        // Üyeyi bul
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("Üye bulunamadı!"));
 
-        // 3. Ödünç kaydını oluştur
+        // Ödünç kaydını oluştur
         Loan loan = new Loan();
         loan.setBook(book);
         loan.setMember(member);
@@ -79,8 +80,8 @@ public class LoanService {
         loan.setReturnDate(LocalDate.now());
 
         // 4. CEZA HESAPLAMA
-        LocalDate dueDate = loan.getLoanDate().plusDays(15);
-        
+        LocalDate dueDate = loan.getLoanDate().plusDays(1); // Deneme için 1 gün yaptım (Sena)
+
         if (loan.getReturnDate().isAfter(dueDate)) {
             long overdueDays = ChronoUnit.DAYS.between(dueDate, loan.getReturnDate());
             double penaltyAmount = overdueDays * 5.0; // Günlük 5 TL
@@ -88,7 +89,7 @@ public class LoanService {
         } else {
             loan.setPenalty(0.0);
         }
-        
+
         // Kitap geri geldi, durumunu 'Müsait' (true) yap
         Book book = loan.getBook();
         book.setAvailable(true);
@@ -96,5 +97,13 @@ public class LoanService {
 
         // 5. Kaydet ve bitir
         return loanRepository.save(loan);
+    }
+
+    public List<Loan> searchLoans(String query) {
+        // Girilen kelimeye göre (ad/soyad veya kitap başlığı içinde) ödünç kayıtlarını
+        // arar
+        return loanRepository
+                .findByMember_FirstNameContainingIgnoreCaseOrMember_LastNameContainingIgnoreCaseOrBook_TitleContainingIgnoreCase(
+                        query, query, query);
     }
 }

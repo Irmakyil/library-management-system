@@ -36,6 +36,11 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getLoansByMember(memberId));
     }
 
+    @GetMapping("/search")
+    public List<Loan> searchLoans(@org.springframework.web.bind.annotation.RequestParam String query) {
+        return loanService.searchLoans(query);
+    }
+
     @PostMapping("/borrow")
     public ResponseEntity<?> createLoan(@RequestBody BorrowRequest request) {
         try {
@@ -62,9 +67,20 @@ public class LoanController {
         private Long memberId;
         private Long bookId;
 
-        public Long getMemberId() { return memberId; }
-        public void setMemberId(Long memberId) { this.memberId = memberId; }
-        public Long getBookId() { return bookId; }
-        public void setBookId(Long bookId) { this.bookId = bookId; }
+        public Long getMemberId() {
+            return memberId;
+        }
+
+        public void setMemberId(Long memberId) {
+            this.memberId = memberId;
+        }
+
+        public Long getBookId() {
+            return bookId;
+        }
+
+        public void setBookId(Long bookId) {
+            this.bookId = bookId;
+        }
     }
 }

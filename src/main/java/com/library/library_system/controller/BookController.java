@@ -30,9 +30,10 @@ public class BookController {
 
     // POST İsteği: Yeni kitap ekle
     @PostMapping
-    public Book addBook(@RequestBody Book book) {
-        return bookService.addBook(book);
-    }
+    public Book addBook(@RequestBody com.library.library_system.dto.BookRequest request) {
+        return bookService.addBook(request);
+    } // Book entity yerine BookRequest (DTO) alırız: sadece gerekli alanlar gelir,
+      // istenmeyen alanların (id vb.) gelmesi engellenir.
 
     // GET: /api/books/search?query=suç
     @GetMapping("/search")
@@ -50,6 +51,27 @@ public class BookController {
     @GetMapping("/author/{authorId}")
     public List<Book> getBooksByAuthor(@org.springframework.web.bind.annotation.PathVariable Long authorId) {
         return bookService.getBooksByAuthor(authorId);
+    }
+
+    // Kitaplar için güncelleme (PUT) ve silme (DELETE) işlemlerini yönetir.
+    @org.springframework.web.bind.annotation.PutMapping("/{id}")
+    public org.springframework.http.ResponseEntity<Book> updateBook(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            @RequestBody com.library.library_system.dto.BookRequest request) {
+        // Path'ten gelen id'ye göre kitabı, request (DTO) içindeki yeni bilgilerle
+        // günceller
+        Book updatedBook = bookService.updateBook(id, request);
+        // Güncellenen kitabı 200 OK ile döndürür
+        return org.springframework.http.ResponseEntity.ok(updatedBook);
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    public org.springframework.http.ResponseEntity<Void> deleteBook(
+            @org.springframework.web.bind.annotation.PathVariable Long id) {
+        // Path'ten gelen id'ye göre kitabı siler
+        bookService.deleteBook(id);
+        // Silme işlemi başarılı olursa 200 OK (boş body) döndürür
+        return org.springframework.http.ResponseEntity.ok().build();
     }
 
 }

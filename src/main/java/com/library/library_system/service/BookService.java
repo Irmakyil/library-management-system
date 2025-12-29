@@ -8,13 +8,21 @@ import com.library.library_system.model.Book;
 import com.library.library_system.repository.BookRepository;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final com.library.library_system.repository.AuthorRepository authorRepository;
+    private final com.library.library_system.repository.CategoryRepository categoryRepository;
 
-    // Constructor Injection (En sağlıklı yöntem)
-    public BookService(BookRepository bookRepository) {
+    // Constructor ile repository bağımlılıklarını enjekte eder (Book, Author ve
+    // Category işlemleri için)
+    public BookService(BookRepository bookRepository,
+            com.library.library_system.repository.AuthorRepository authorRepository,
+            com.library.library_system.repository.CategoryRepository categoryRepository) {
         this.bookRepository = bookRepository;
+        this.authorRepository = authorRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     // Tüm kitapları getir
@@ -23,7 +31,9 @@ public class BookService {
     }
 
     // Yeni kitap ekle
-    public Book addBook(Book book) {
+    public Book addBook(com.library.library_system.dto.BookRequest request) {
+        Book book = new Book();
+        updateBookFromRequest(book, request);
         return bookRepository.save(book);
     }
 
@@ -43,5 +53,43 @@ public class BookService {
     public List<Book> searchBooks(String query) {
         // Gelen arama kelimesini hem başlıkta hem yazarda arar
         return bookRepository.findByTitleContainingIgnoreCaseOrAuthor_NameContainingIgnoreCase(query, query);
+    }
+
+    public Book updateBook(Long id, com.library.library_system.dto.BookRequest request) {
+        Book book = bookRepository.findById(id).orElseThrow(() -> new RuntimeException("Kitap bulunamadı"));
+        updateBookFromRequest(book, request);
+        return bookRepository.save(book);
+    }
+
+    public void deleteBook(Long id) {
+        bookRepository.deleteById(id);
+    }
+
+    // Yardımcı Method: Request'ten Book nesnesini güncelle
+    private void updateBookFromRequest(Book book, com.library.library_system.dto.BookRequest request) {
+        book.setTitle(request.getTitle());
+        book.setIsbn(request.getIsbn());
+        book.setPublicationYear(request.getPublicationYear());
+
+        // Yazar Kontrolü
+        com.library.library_system.model.Author author = authorRepository.findByName(request.getAuthorName());
+        if (author == null) {
+            author = new com.library.library_system.model.Author();
+            author.setName(request.getAuthorName());
+            author = authorRepository.save(author);
+        }
+        book.setAuthor(author);
+
+        // Kategori Kontrolü
+        if (request.getCategoryId() != null) {
+            com.library.library_system.model.Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElse(null);
+            book.setCategory(category);
+        }
+
+        // Yeni kitap eklenirken available true olsun
+        if (book.getId() == null) {
+            book.setAvailable(true);
+        }
     }
 }
