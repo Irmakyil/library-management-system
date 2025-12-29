@@ -46,4 +46,10 @@ public class BookController {
         return bookService.getBooksByCategory(categoryId);
     }
 
+    // GET: /api/books/author/{id}
+    @GetMapping("/author/{authorId}")
+    public List<Book> getBooksByAuthor(@org.springframework.web.bind.annotation.PathVariable Long authorId) {
+        return bookService.getBooksByAuthor(authorId);
+    }
+
 }

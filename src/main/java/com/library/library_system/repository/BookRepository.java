@@ -13,9 +13,15 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     // "Containing": İçinde geçenleri bul (LIKE %query%)
     // "IgnoreCase": Büyük/küçük harf fark etmez
-    List<Book> findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(String title, String author);
+    List<Book> findByTitleContainingIgnoreCaseOrAuthor_NameContainingIgnoreCase(String title, String authorName);
+    // Kitap başlığına göre veya Yazarın ismine (firstName) göre arama yapar
+    // List<Book> findByTitleContainingIgnoreCaseOrAuthor_NameContainingIgnoreCase(String title, String authorName);
 
     // "Category" nesnesinin "Id" alanına göre bul.
     List<Book> findByCategoryId(Long categoryId);
+
+    List<Book> findByAuthorId(Long authorId);
+    // Seçilen tüm yazar ID'lerine ait kitapları getirir (IN operatörü ile)
+    //List<Book> findByAuthorIdIn(List<Long> authorIds);
 
 }

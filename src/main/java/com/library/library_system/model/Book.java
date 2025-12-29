@@ -25,8 +25,9 @@ public class Book {
     @Column(name = "title", nullable = false) // Boş bırakılamaz
     private String title;
 
-    @Column(name = "author", nullable = false)
-    private String author;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "author_id", nullable = false) // Boş bırakılamaz
+    private Author author;
 
     @Column(name = "isbn", unique = true) // ISBN benzersiz olmalı
     private String isbn;
@@ -49,7 +50,7 @@ public class Book {
     }
 
     // --- Constructor (Dolu) ---
-    public Book(String title, String author, String isbn, int publicationYear, Category category) {
+    public Book(String title, Author author, String isbn, int publicationYear, Category category) {
         this.title = title;
         this.author = author;
         this.isbn = isbn;
@@ -66,8 +67,8 @@ public class Book {
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
 
-    public String getAuthor() { return author; }
-    public void setAuthor(String author) { this.author = author; }
+    public Author getAuthor() { return author; }
+    public void setAuthor(Author author) { this.author = author; }
 
     public String getIsbn() { return isbn; }
     public void setIsbn(String isbn) { this.isbn = isbn; }

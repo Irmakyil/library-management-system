@@ -36,8 +36,12 @@ public class BookService {
         return bookRepository.findByCategoryId(categoryId);
     }
 
+    public List<Book> getBooksByAuthor(Long authorId) {
+        return bookRepository.findByAuthorId(authorId);
+    }
+
     public List<Book> searchBooks(String query) {
         // Gelen arama kelimesini hem başlıkta hem yazarda arar
-        return bookRepository.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(query, query);
+        return bookRepository.findByTitleContainingIgnoreCaseOrAuthor_NameContainingIgnoreCase(query, query);
     }
 }
