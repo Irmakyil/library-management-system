@@ -1,61 +1,82 @@
--- Kütüphane Yönetim Sistemi Veritabanı Şeması
+-- Kütüphane Yönetim Sistemi Veritabanı Şeması 
 
--- Eğer varsa önce eski tabloyu temizle (Opsiyonel)
+-- Önce bağımlı tabloları temizle (gerekirse)
+-- DROP TABLE IF EXISTS loans;
+-- DROP TABLE IF EXISTS inventory;
 -- DROP TABLE IF EXISTS books;
+-- DROP TABLE IF EXISTS authors;
+-- DROP TABLE IF EXISTS categories;
+-- DROP TABLE IF EXISTS members;
+-- DROP TABLE IF EXISTS branches;
 
--- Kitaplar (Books) Tablosu
-CREATE TABLE IF NOT EXISTS books (
-    id BIGSERIAL PRIMARY KEY,           -- Otomatik artan ID
-    title VARCHAR(255) NOT NULL,        -- Kitap Başlığı (Boş olamaz)
-    author VARCHAR(255) NOT NULL,       -- Yazar (Boş olamaz)
-    isbn VARCHAR(255) UNIQUE,           -- ISBN (Benzersiz olmalı)
-    publication_year INTEGER            -- Basım Yılı
-);
-
--- Şubeler (Branches) Tablosu
-CREATE TABLE IF NOT EXISTS branches (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    address VARCHAR(255)
-);
-
--- Üyeler (Members) Tablosu
-CREATE TABLE IF NOT EXISTS members (
-    id BIGSERIAL PRIMARY KEY,
-    first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL
-);
-
--- Ödünç İşlemleri (Loans) Tablosu
-CREATE TABLE IF NOT EXISTS loans (
-    id BIGSERIAL PRIMARY KEY,
-    member_id BIGINT NOT NULL,
-    book_id BIGINT NOT NULL,
-    loan_date DATE NOT NULL,
-    return_date DATE,
-    penalty DECIMAL(10, 2), -- Yeni eklenen ceza alanı
-    FOREIGN KEY (member_id) REFERENCES members(id),
-    FOREIGN KEY (book_id) REFERENCES books(id)
-);
-
--- Yazarlar (Authors) Tablosu
+-- 1. Yazarlar (Authors) Tablosu (Books tablosundan önce oluşturulmalı)
 CREATE TABLE IF NOT EXISTS authors (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     bio VARCHAR(1000)
 );
 
--- Kategoriler (Categories) Tablosu
+-- 2. Kategoriler (Categories) Tablosu (Books tablosundan önce oluşturulmalı)
 CREATE TABLE IF NOT EXISTS categories (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) UNIQUE NOT NULL
 );
 
--- Envanter (Inventory) Tablosu
+-- 3. Kitaplar (Books) Tablosu
+-- İlişkiler: Author ve Category tablolarına ID ile bağlanır.
+CREATE TABLE IF NOT EXISTS books (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    isbn VARCHAR(255) UNIQUE,
+    publication_year INTEGER,
+    
+    -- İlişki Sütunları
+    author_id BIGINT NOT NULL,
+    category_id BIGINT,
+
+    -- Durum Sütunları
+    available BOOLEAN DEFAULT TRUE,
+    updated_at TIMESTAMP,
+
+    -- Foreign Keys
+    CONSTRAINT fk_book_author FOREIGN KEY (author_id) REFERENCES authors(id),
+    CONSTRAINT fk_book_category FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+-- 4. Şubeler (Branches) Tablosu
+CREATE TABLE IF NOT EXISTS branches (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(255)
+);
+
+-- 5. Üyeler (Members) Tablosu
+CREATE TABLE IF NOT EXISTS members (
+    id BIGSERIAL PRIMARY KEY,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL
+);
+
+-- 6. Ödünç İşlemleri (Loans) Tablosu
+CREATE TABLE IF NOT EXISTS loans (
+    id BIGSERIAL PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    book_id BIGINT NOT NULL,
+    loan_date DATE NOT NULL,
+    return_date DATE,
+    penalty DECIMAL(10, 2) DEFAULT 0.0,
+    
+    CONSTRAINT fk_loan_member FOREIGN KEY (member_id) REFERENCES members(id),
+    CONSTRAINT fk_loan_book FOREIGN KEY (book_id) REFERENCES books(id)
+);
+
+-- 7. Envanter (Inventory) Tablosu
 CREATE TABLE IF NOT EXISTS inventory (
     id BIGSERIAL PRIMARY KEY,
     book_id BIGINT NOT NULL UNIQUE,
     stock_quantity INTEGER NOT NULL DEFAULT 0,
-    FOREIGN KEY (book_id) REFERENCES books(id)
+    
+    CONSTRAINT fk_inventory_book FOREIGN KEY (book_id) REFERENCES books(id)
 );

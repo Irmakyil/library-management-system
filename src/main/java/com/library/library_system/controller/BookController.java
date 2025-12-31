@@ -3,6 +3,7 @@ package com.library.library_system.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,9 +18,11 @@ import com.library.library_system.service.BookService;
 public class BookController {
 
     private final BookService bookService;
+    private final com.library.library_system.service.RecommendationService recommendationService; 
 
-    public BookController(BookService bookService) {
+    public BookController(BookService bookService, com.library.library_system.service.RecommendationService recommendationService) {
         this.bookService = bookService;
+        this.recommendationService = recommendationService;
     }
 
     // GET İsteği: Tüm kitapları listele
@@ -72,6 +75,11 @@ public class BookController {
         bookService.deleteBook(id);
         // Silme işlemi başarılı olursa 200 OK (boş body) döndürür
         return org.springframework.http.ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/recommendations/{memberId}")
+    public org.springframework.http.ResponseEntity<List<Book>> getRecommendations(@PathVariable Long memberId) {
+        return org.springframework.http.ResponseEntity.ok(recommendationService.recommendBooks(memberId));
     }
 
 }
