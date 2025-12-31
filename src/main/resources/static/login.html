@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kütüphane</title>
+    <link rel="icon" href="images/kitap.png" type="image/png">
+    <link rel="stylesheet" href="css/style.css?v=10">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- AUTH SECTION: 3D BOOK -->
+        <div id="authSection" class="book-container">
+            <div class="book">
+                <!-- Sol Sayfa Sabit (Kapak/İç) -->
+                <div class="page left-base">
+                    <div class="content-center-col" style="text-align: center;">
+                        <div class="header-icon-box">
+                            <img src="images/kitap.png"
+                                style="width: 48px; height: 48px; margin-bottom: 10px; object-fit: contain;" alt="Logo">
+                            <h1 class="font-serif text-ink" style="font-size: 2.5rem; font-weight: bold; margin: 0;">
+                                Kütüphane</h1>
+                            <div
+                                style="height: 4px; width: 60px; background-color: var(--primary); opacity: 0.6; margin: 10px auto; border-radius: 999px;">
+                            </div>
+                        </div>
+
+                        <h2 class="font-serif text-stone-500"
+                            style="font-size: 1.5rem; font-style: italic; margin-bottom: 20px;">"Bilgiye Açılan Kapı"
+                        </h2>
+
+                        <p class="font-display text-stone-500" style="line-height: 1.6;">
+                            Binlerce kaynağa erişim sağlayan dijital kütüphanemize hoş geldiniz.
+                        </p>
+
+                        <p class="font-display text-stone-500" style="line-height: 1.6;">
+                            Araştırmalarınızı yönetin, kitaplarınızı takip edin ve yeni dünyalar keşfedin.
+                        </p>
+                    </div>
+                    <div style="position: absolute; bottom: 20px; left: 30px; color: #d6d3d1; font-family: serif;">13
+                    </div>
+                </div>
+
+                <!-- Sağ Sayfa Sabit -->
+                <div class="page right-base">
+                    <div class="content-center-col"
+                        style="text-align: center; padding-left: 60px; padding-right: 20px; align-items: center;">
+                        <img src="images/kitap.png" style="width: 120px; height: 120px; object-fit: contain;"
+                            alt="Kütüphane">
+                        <h1 class="font-serif text-ink" style="font-size: 2.5rem; font-weight: bold; margin-top: 10px;">
+                            Kütüphane</h1>
+                    </div>
+                    <div style="position: absolute; bottom: 20px; right: 30px; color: #d6d3d1; font-family: serif;">16
+                    </div>
+                </div>
+
+                <!-- Dönen Yaprak -->
+                <div class="page-leaf" id="flippingPage">
+                    <!-- ÖN YÜZ: GİRİŞ YAP -->
+                    <div class="page-face front" id="loginFace">
+                        <div class="content-center-col">
+                            <div style="margin-bottom: 30px;">
+                                <h3 class="font-serif text-ink"
+                                    style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">Giriş Yap</h3>
+                                <p class="text-stone-500 font-display" style="font-size: 0.9rem;">Hesabınıza erişmek
+                                    için lütfen bilgilerinizi girin.</p>
+                            </div>
+
+                            <!-- Login Message Box -->
+                            <div id="loginMsg" class="message-box" style="margin-bottom: 20px;"></div>
+
+                            <form onsubmit="event.preventDefault(); handleLogin();">
+                                <div class="input-group">
+                                    <label class="input-label">E-posta Adresi</label>
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <path
+                                            d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z" />
+                                    </svg>
+                                    <input type="text" id="loginEmail" class="handwritten-input"
+                                        placeholder="ornek@kutuphane.com">
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="input-label">Şifre</label>
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <path
+                                            d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" />
+                                    </svg>
+                                    <input type="password" id="loginPass" class="handwritten-input"
+                                        placeholder="••••••••">
+                                </div>
+
+                                <button type="submit" class="btn-primary-design">
+                                    <span>Giriş Yap</span>
+                                </button>
+                            </form>
+
+                            <div style="margin-top: 30px; text-align: center;">
+                                <a onclick="flipToRegister()" class="link-text">
+                                    Henüz hesabınız yok mu? <span>Kayıt Ol</span>
+                                </a>
+                            </div>
+                            <div
+                                style="position: absolute; bottom: 20px; right: 30px; color: #d6d3d1; font-family: serif;">
+                                14
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ARKA YÜZ: KAYIT OL -->
+                    <div class="page-face back" id="registerFace">
+                        <div class="content-center-col">
+                            <div style="margin-bottom: 20px;">
+                                <h3 class="font-serif text-ink"
+                                    style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">Kayıt Ol</h3>
+                                <p class="text-stone-500 font-display" style="font-size: 0.9rem;">Kütüphanemize katılmak
+                                    için formu doldurun.</p>
+                            </div>
+
+                            <!-- Register Message Box -->
+                            <div id="registerMsg" class="message-box" style="margin-bottom: 20px;"></div>
+
+                            <form onsubmit="event.preventDefault(); handleRegister();">
+                                <div class="input-group">
+                                    <label class="input-label">Ad Soyad</label>
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <path
+                                            d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
+                                    </svg>
+                                    <input type="text" id="reg-name" class="handwritten-input" placeholder="Ad Soyad">
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="input-label">Email</label>
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <path
+                                            d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z" />
+                                    </svg>
+                                    <input type="text" id="reg-email" class="handwritten-input"
+                                        placeholder="ornek@email.com">
+                                </div>
+
+                                <div class="input-group">
+                                    <label class="input-label">Şifre</label>
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <path
+                                            d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" />
+                                    </svg>
+                                    <input type="password" id="reg-pass" class="handwritten-input"
+                                        placeholder="••••••••">
+                                </div>
+
+                                <button type="submit" class="btn-primary-design">
+                                    <span>Kayıt Ol</span>
+                                </button>
+                            </form>
+
+                            <div style="margin-top: 25px; text-align: center;">
+                                <a onclick="flipToLogin()" class="link-text">
+                                    Zaten hesabınız var mı? <span>Giriş Yap</span>
+                                </a>
+                            </div>
+                            <div
+                                style="position: absolute; bottom: 20px; left: 30px; color: #d6d3d1; font-family: serif;">
+                                15
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- END AUTH SECTION -->
+
+    </div>
+
+    <!-- Auth Logic -->
+    <script src="js/auth.js"></script>
+
+</body>
+
+</html>

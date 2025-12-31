@@ -62,7 +62,21 @@ public class BookService {
     }
 
     public void deleteBook(Long id) {
+        Book book = bookRepository.findById(id).orElse(null);
+        if (book == null) {
+            return;
+        }
+
+        com.library.library_system.model.Author author = book.getAuthor();
         bookRepository.deleteById(id);
+
+        // Eğer yazarın başka kitabı kalmadıysa yazarı da sil
+        if (author != null) {
+            List<Book> remainingBooks = bookRepository.findByAuthorId(author.getId());
+            if (remainingBooks.isEmpty()) {
+                authorRepository.delete(author);
+            }
+        }
     }
 
     // Yardımcı Method: Request'ten Book nesnesini güncelle

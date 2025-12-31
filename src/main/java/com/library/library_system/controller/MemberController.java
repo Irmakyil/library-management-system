@@ -66,4 +66,23 @@ public class MemberController {
     public List<Member> searchMembers(@org.springframework.web.bind.annotation.RequestParam String query) {
         return memberService.searchMembers(query);
     }
+
+    // Üyenin mevcut şifresini doğrulayıp yeni şifreyle günceller; eksik bilgi veya
+    // hatalı mevcut şifre durumunda hata döner.
+    @org.springframework.web.bind.annotation.PutMapping("/{id}/password")
+    public ResponseEntity<String> updatePassword(@PathVariable Long id, @RequestBody Map<String, String> passwords) {
+        String currentPassword = passwords.get("currentPassword");
+        String newPassword = passwords.get("newPassword");
+
+        if (currentPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest().body("Eksik bilgi.");
+        }
+
+        boolean updated = memberService.updatePassword(id, currentPassword, newPassword);
+        if (updated) {
+            return ResponseEntity.ok("Şifre başarıyla güncellendi.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mevcut şifre hatalı.");
+        }
+    }
 }

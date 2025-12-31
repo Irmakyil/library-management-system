@@ -53,4 +53,16 @@ public class MemberService {
         // Üye adında veya soyadında geçen ifadeye göre arama yapar
         return memberRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
     }
+
+    // Üyeyi ID ile bulur, mevcut şifreyi kontrol eder; doğruysa yeni şifreyi
+    // kaydedip true, değilse false döner.
+    public boolean updatePassword(Long memberId, String currentPassword, String newPassword) {
+        Member member = memberRepository.findById(memberId).orElse(null);
+        if (member != null && member.getPassword().equals(currentPassword)) {
+            member.setPassword(newPassword);
+            memberRepository.save(member);
+            return true;
+        }
+        return false;
+    }
 }
