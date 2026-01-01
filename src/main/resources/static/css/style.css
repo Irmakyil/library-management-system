@@ -285,8 +285,10 @@ select:focus {
 .input-group .icon {
     position: absolute;
     left: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    top: auto;
+    bottom: 12px;
+    /* Adjusted to align with text center */
+    transform: none;
     color: var(--stone-400);
     pointer-events: none;
     width: 20px;
