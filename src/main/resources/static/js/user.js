@@ -676,7 +676,6 @@ async function borrowBook(bookId) {
 
         if (res.ok) {
             alert("Kitap başarıyla ödünç alındı!");
-            // Refresh logic depends on the page
             if (window.location.pathname.includes("dashboard.html")) {
                 loadAllBooks();
                 loadRecommendations();
