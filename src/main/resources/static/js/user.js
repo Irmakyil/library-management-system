@@ -9,10 +9,22 @@ let hasMore = true;
 
 // --- AUTH & INIT ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Sayfa yüklendiğinde kullanıcı kontrolü
     // Login veya register sayfasında değilsek
-    if (!window.location.pathname.endsWith("login.html")) {
-        checkUserAuth();
+    if (!window.location.pathname.includes("login.html") && !window.location.pathname.includes("register.html")) {
+
+        // Sayfa yönlendirme mantığı
+        if (window.location.pathname.includes("dashboard.html")) {
+            initDashboard();
+        } else if (window.location.pathname.includes("my-books.html")) {
+            initMyBooks();
+        } else if (window.location.pathname.includes("history.html")) {
+            initHistory();
+        } else if (window.location.pathname.includes("settings.html")) {
+            initSettings();
+        } else {
+            // Diğer sayfalar veya ana root
+            checkUserAuth();
+        }
     }
 });
 
@@ -77,6 +89,21 @@ async function initDashboard() {
     loadAllBooks();
     loadCategories();
     loadAuthors();
+
+    loadAuthors();
+
+    // Infinite Scroll: .main-content içinde scroll olayını dinle
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.addEventListener('scroll', () => {
+            // ScrollTop + ClientHeight >= ScrollHeight - Threshold
+            if ((mainContent.scrollTop + mainContent.clientHeight) >= mainContent.scrollHeight - 300) {
+                if (hasMore && !isLoading && window.location.pathname.includes("dashboard.html")) {
+                    loadAllBooks(false);
+                }
+            }
+        });
+    }
 }
 
 // --- RECOMMENDATIONS ---
@@ -249,6 +276,8 @@ function updateLoadMoreButton() {
     if (hasMore) {
         btn.style.display = "block";
         btn.innerHTML = isLoading ? "Yükleniyor..." : "Daha Fazla Yükle";
+        // Infinite scroll olduğu için butonu gizleyebiliriz veya loading göstergesi yapabiliriz.
+        // Kullanıcı manuel de basabilsin diye bırakıyoruz ama stilini sadeleştirebiliriz.
     } else {
         btn.style.display = "none";
     }
