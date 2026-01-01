@@ -1,12 +1,12 @@
 package com.library.library_system.controller;
 
-import com.library.library_system.dto.DashboardStats;
+import com.library.library_system.dto.DashboardStats; 
 import com.library.library_system.model.Loan;
 import com.library.library_system.repository.InventoryRepository;
 import com.library.library_system.repository.LoanRepository;
 import com.library.library_system.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest; // BU IMPORT ÖNEMLİ
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,10 +29,14 @@ public class DashboardController {
         Long totalStock = inventoryRepository.sumTotalStock();
         if (totalStock == null) totalStock = 0L;
         
-        Long memberCount = memberRepository.countByRole("MEMBER");
-        Long activeCount = loanRepository.countByReturnDateIsNull();
+        // Üye Sayısı (Admin Hariç)
+        Long memberCount = memberRepository.countAllMembersExceptAdmin();
 
-        LocalDate overdueThreshold = LocalDate.now().minusDays(15);
+        // Aktif ödünç sayısını hesapla (İade tarihi boş olanlar)
+        Long activeCount = loanRepository.countByReturnDateIsNull(); 
+        // -----------------------------------
+
+        LocalDate overdueThreshold = LocalDate.now().minusDays(1);
         Long overdueCount = loanRepository.countOverdueLoans(overdueThreshold);
 
         // 2. Listeler 

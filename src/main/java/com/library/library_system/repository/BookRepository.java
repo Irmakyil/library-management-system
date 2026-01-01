@@ -3,7 +3,8 @@ package com.library.library_system.repository;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable; 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +14,10 @@ import com.library.library_system.model.Book;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = { "author", "category", "inventory" })
+    Page<Book> findAll(Pageable pageable);
 
     // --- 1. BOOK SERVICE İÇİN GEREKLİ OLANLAR  ---
     
@@ -44,12 +49,12 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     // Hem Arama Kelimesi, Hem Kategori, Hem Yazar ID'sine göre sayfalama (Page) destekli arama
     // NOT: CONCAT kullanımı yerine parametreye % eklenmiş halini bekliyoruz (Controller'da yaptık)
     @Query("SELECT b FROM Book b WHERE " +
-           "(:categoryId IS NULL OR b.category.id = :categoryId) AND " +
-           "(:authorId IS NULL OR b.author.id = :authorId) AND " +
-           "(:query IS NULL OR LOWER(b.title) LIKE LOWER(:query) OR " +
-           "LOWER(b.isbn) LIKE LOWER(:query))")
+        "(:categoryId IS NULL OR b.category.id = :categoryId) AND " +
+        "(:authorId IS NULL OR b.author.id = :authorId) AND " +
+        "(:query IS NULL OR LOWER(b.title) LIKE LOWER(:query) OR " +
+        "LOWER(b.isbn) LIKE LOWER(:query))")
     Page<Book> searchBooks(@Param("query") String query, 
-                           @Param("categoryId") Long categoryId, 
-                           @Param("authorId") Long authorId, 
-                           Pageable pageable);
+                        @Param("categoryId") Long categoryId, 
+                        @Param("authorId") Long authorId, 
+                        Pageable pageable);
 }

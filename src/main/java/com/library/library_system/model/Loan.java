@@ -1,7 +1,7 @@
 package com.library.library_system.model;
 
 import java.time.LocalDate;
-
+ 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "loans")
@@ -19,24 +20,36 @@ public class Loan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // İlişki: Bir ödünç işlemi bir üyeye aittir.
     @ManyToOne
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    // İlişki: Bir ödünç işlemi bir kitaba aittir.
     @ManyToOne
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
-    private LocalDate loanDate;   // Veriliş Tarihi
-    private LocalDate returnDate; // İade Tarihi
+    private LocalDate loanDate;
+    private LocalDate returnDate;
 
     @Column(name = "penalty")
-    private Double penalty = 0.0; // Varsayılan 0.0 olsun
+    private Double penalty = 0.0;
 
-    // --- Constructorlar ---
+    // --- JSON'DA GÖRÜNECEK HESAPLANMIŞ ALAN ---
+    // @Transient notasyonu bu alanın veritabanına kaydedilmemesini, 
+    // sadece çalışma anında hesaplanmasını sağlar.
+    @Transient
+    private boolean overdue;
+
     public Loan() {}
+
+    // GECİKME DURUMUNU HESAPLAYAN GETTER ---
+    public boolean isOverdue() {
+        if (this.returnDate != null) {
+            return false; // İade edildiyse gecikmiş sayılmaz
+        }
+        // Ödünç tarihinden itibaren 1 gün geçtiyse ve hala iade edilmediyse true döner
+        return LocalDate.now().isAfter(this.loanDate.plusDays(1));
+    }
 
     // --- Getter & Setter ---
     public Long getId() { return id; }
