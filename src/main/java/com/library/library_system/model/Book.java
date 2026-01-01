@@ -2,17 +2,22 @@ package com.library.library_system.model;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.FetchType;
+
 
 @Entity // Bu class'ın bir veritabanı tablosu olduğunu söyler
 @Table(name = "books") // Veritabanında tablonun adı 'books' olsun
@@ -44,6 +49,10 @@ public class Book {
     @ManyToOne(fetch = FetchType.EAGER) // Kitabı çekerken kategoriyi de getir
     @JoinColumn(name = "category_id") // Veritabanında 'category_id' adında bir sütun oluşacak
     private Category category;
+
+    @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonManagedReference
+    private Inventory inventory;
 
     // --- Constructor (Boş) ---
     public Book() {
@@ -84,6 +93,9 @@ public class Book {
 
     public Category getCategory() { return category; }
     public void setCategory(Category category) { this.category = category; }
+
+    public Inventory getInventory() { return inventory; }
+    public void setInventory(Inventory inventory) { this.inventory = inventory; }
 
     @PreUpdate
     @PrePersist

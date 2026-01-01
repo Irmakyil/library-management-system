@@ -1,30 +1,37 @@
 package com.library.library_system.service;
 
 import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.library.library_system.model.Book;
+import com.library.library_system.model.Inventory;
+import com.library.library_system.repository.AuthorRepository;
 import com.library.library_system.repository.BookRepository;
+import com.library.library_system.repository.CategoryRepository;
+import com.library.library_system.repository.InventoryRepository;
 
 @Service
-@org.springframework.transaction.annotation.Transactional
+@Transactional
 public class BookService {
 
     private final BookRepository bookRepository;
-    private final com.library.library_system.repository.AuthorRepository authorRepository;
-    private final com.library.library_system.repository.CategoryRepository categoryRepository;
+    private final AuthorRepository authorRepository;
+    private final CategoryRepository categoryRepository;
+    private final InventoryRepository inventoryRepository;
 
-    // Constructor ile repository bağımlılıklarını enjekte eder (Book, Author ve
-    // Category işlemleri için)
+    // Constructor Dependency Injection
     public BookService(BookRepository bookRepository,
-            com.library.library_system.repository.AuthorRepository authorRepository,
-            com.library.library_system.repository.CategoryRepository categoryRepository) {
+                       AuthorRepository authorRepository,
+                       CategoryRepository categoryRepository,
+                       InventoryRepository inventoryRepository) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.categoryRepository = categoryRepository;
+        this.inventoryRepository = inventoryRepository;
     }
 
     // Tüm kitapları getir
@@ -41,7 +48,17 @@ public class BookService {
     public Book addBook(com.library.library_system.dto.BookRequest request) {
         Book book = new Book();
         updateBookFromRequest(book, request);
-        return bookRepository.save(book);
+
+        // Önce kitabı kaydet
+        Book savedBook = bookRepository.save(book);
+
+        // Sonra stoğu (Inventory) kaydet
+        Inventory inventory = new Inventory();
+        inventory.setBook(savedBook);
+        inventory.setStockQuantity(request.getStock() > 0 ? request.getStock() : 1); // Hiç girilmezse 1 olsun
+        inventoryRepository.save(inventory);
+
+        return savedBook;
     }
 
     // ID ile kitap bul
@@ -62,9 +79,30 @@ public class BookService {
         return bookRepository.findByTitleContainingIgnoreCaseOrAuthor_NameContainingIgnoreCase(query, query);
     }
 
+    // --- GÜNCELLENEN METOT: updateBook ---
     public Book updateBook(Long id, com.library.library_system.dto.BookRequest request) {
-        Book book = bookRepository.findById(id).orElseThrow(() -> new RuntimeException("Kitap bulunamadı"));
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Kitap bulunamadı"));
+        
+        // Kitap bilgilerini güncelle
         updateBookFromRequest(book, request);
+
+        // STOK GÜNCELLEME KISMI 
+        Inventory inventory = book.getInventory();
+        if (inventory == null) {
+            // Eğer daha önce stoğu hiç yoksa (eski veri) yeni oluştur
+            inventory = new Inventory(book, request.getStock());
+        } else {
+            // Varsa güncelle
+            inventory.setStockQuantity(request.getStock());
+        }
+        inventoryRepository.save(inventory); 
+
+
+        // Stok durumuna göre 'available' (müsaitlik) bilgisini güncelle
+        // Stok > 0 ise true, değilse false
+        book.setAvailable(request.getStock() > 0);
+
         return bookRepository.save(book);
     }
 
@@ -108,7 +146,7 @@ public class BookService {
             book.setCategory(category);
         }
 
-        // Yeni kitap eklenirken available true olsun
+        // Yeni kitap eklenirken available true olsun 
         if (book.getId() == null) {
             book.setAvailable(true);
         }

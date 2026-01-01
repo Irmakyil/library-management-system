@@ -1,8 +1,16 @@
-const API = "/api";
+const API = "http://localhost:8080/api";
 let allCategories = [];
 let allAuthors = [];
 let allAdminBooks = [];
 let allAdminLoans = [];
+
+function getAuthHeaders() {
+    const token = localStorage.getItem("token");
+    return { 
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token 
+    };
+}
 
 // --- COMMON AUTH & INIT ---
 function checkAdminAuth() {
@@ -72,17 +80,31 @@ async function loadDashboardStats() {
             fetch(`${API}/loans`).then(r => r.json())
         ]);
 
+        // 1. KİTAP SAYISI (STOKLARI TOPLAYARAK HESAPLA)
         const books = booksData.content || booksData;
+        let totalStock = 0;
 
-        document.getElementById('stat-total-books').innerText = books.length;
+        if (Array.isArray(books)) {
+            // reduce fonksiyonu ile tüm kitapların stoklarını topluyoruz
+            totalStock = books.reduce((toplam, kitap) => {
+                // Eğer stok bilgisi varsa onu ekle, yoksa 0 ekle
+                const stokAdedi = (kitap.inventory && kitap.inventory.stockQuantity) ? kitap.inventory.stockQuantity : 0;
+                return toplam + stokAdedi;
+            }, 0);
+        }
+        document.getElementById('stat-total-books').innerText = totalStock; // Toplam stok yazılır
+
+        // 2. ÜYE SAYISI
         document.getElementById('stat-total-members').innerText = members.length;
 
+        // 3. AKTİF ÖDÜNÇ
         const activeLoans = loans.filter(l => l.returnDate === null);
         document.getElementById('stat-active-loans').innerText = activeLoans.length;
 
+        // 4. GECİKENLER
         const overdue = activeLoans.filter(l => {
             const dueDate = new Date(l.loanDate);
-            dueDate.setDate(dueDate.getDate() + 1); // 1 day overdue rule
+            dueDate.setDate(dueDate.getDate() + 1); // Kural: 1 gün
             return new Date() > dueDate;
         });
         document.getElementById('stat-overdue-loans').innerText = overdue.length;
@@ -277,24 +299,68 @@ function renderBooks(books) {
     const tbody = document.querySelector("#booksTable tbody");
     if (!tbody) return;
     tbody.innerHTML = "";
-    books.forEach(b => {
-        const status = b.available
-            ? `<span style="color:#10b981; background:rgba(16,185,129,0.1); padding:4px 8px; border-radius:4px; font-size:0.85rem;">Müsait</span>`
-            : `<span style="color:#ef4444; background:rgba(239,68,68,0.1); padding:4px 8px; border-radius:4px; font-size:0.85rem;">Ödünçte</span>`;
 
-        tbody.innerHTML += `
-            <tr>
-                <td style="font-weight:500">${b.title}</td>
-                <td style="color:#6b7280">${b.author?.name || '-'}</td>
-                <td style="color:#6b7280">${b.category?.name || '-'}</td>
-                <td style="color:#6b7280">${b.publicationYear}</td>
-                <td>${status}</td>
-                <td>
-                    <button onclick='editBook(${JSON.stringify(b)})' style="margin-right:5px; padding: 4px 10px; background: #143800; color: white; border: none; border-radius: 4px; cursor: pointer;">Düzenle</button>
-                    <button onclick="deleteBook(${b.id})" style="padding: 4px 10px; background: #7b1e1e; color: white; border: none; border-radius: 4px; cursor: pointer;">Sil</button>
-                </td>
-            </tr>
-        `;
+    books.forEach(b => {
+        const tr = document.createElement("tr");
+        tr.style.backgroundColor = "rgba(255, 255, 255, 0.95)";
+        tr.style.borderRadius = "8px";
+
+        const createCell = (text) => {
+            const td = document.createElement("td");
+            td.textContent = text || "-";
+            td.style.color = "#3e2723";
+            td.style.fontWeight = "500";
+            return td;
+        };
+
+        tr.appendChild(createCell(b.title));
+        tr.appendChild(createCell(b.author?.name));
+        tr.appendChild(createCell(b.category?.name));
+        tr.appendChild(createCell(b.publicationYear));
+
+        // Stok
+        const stock = b.inventory ? b.inventory.stockQuantity : 0;
+        const tdStock = createCell(stock);
+        tdStock.style.textAlign = "center";
+        tr.appendChild(tdStock);
+
+        // Durum
+        const tdStatus = document.createElement("td");
+        const statusSpan = document.createElement("span");
+        statusSpan.style.padding = "4px 8px";
+        statusSpan.style.borderRadius = "4px";
+        statusSpan.style.fontSize = "0.85rem";
+        
+        if (stock > 0) {
+            statusSpan.textContent = "Müsait";
+            statusSpan.style.color = "#10b981";
+            statusSpan.style.background = "rgba(16,185,129,0.1)";
+        } else {
+            statusSpan.textContent = "Tükendi";
+            statusSpan.style.color = "#ef4444";
+            statusSpan.style.background = "rgba(239,68,68,0.1)";
+        }
+        tdStatus.appendChild(statusSpan);
+        tr.appendChild(tdStatus);
+
+        // İşlemler
+        const tdActions = document.createElement("td");
+        tdActions.style.textAlign = "right";
+
+        const btnEdit = document.createElement("button");
+        btnEdit.textContent = "Düzenle";
+        btnEdit.style.cssText = "background-color: #5d4037; color: white; border: 1px solid #4e342e; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 0.85rem;";
+        btnEdit.onclick = () => editBook(b);
+
+        const btnDelete = document.createElement("button");
+        btnDelete.textContent = "Sil";
+        btnDelete.style.cssText = "background-color: #8a1c1c; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;";
+        btnDelete.onclick = () => deleteBook(b.id);
+
+        tdActions.appendChild(btnEdit);
+        tdActions.appendChild(btnDelete);
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
     });
 }
 
@@ -309,6 +375,7 @@ function openBookModal() {
     document.getElementById("bookYear").value = "";
     document.getElementById("bookYear").value = "";
     document.getElementById("bookModal").classList.remove("hidden");
+    if(document.getElementById("bookStock")) document.getElementById("bookStock").value = "1";
 
     // Clear error message
     const errorEl = document.getElementById("bookErrorMsg");
@@ -324,26 +391,13 @@ async function editBook(b) {
     document.getElementById("bookIsbn").value = b.isbn;
     document.getElementById("bookYear").value = b.publicationYear;
 
-    // Set value after options are populated
-    if (b.category && b.category.id) {
-        const select = document.getElementById("bookCategory");
-        const targetId = b.category.id.toString();
-
-        // Try setting value
-        select.value = targetId;
-
-        // Verify if set correctly
-        if (select.value !== targetId) {
-            // Fallback: iterate options
-            for (let i = 0; i < select.options.length; i++) {
-                if (select.options[i].value === targetId) {
-                    select.selectedIndex = i;
-                    break;
-                }
-            }
-        }
+    if(document.getElementById("bookStock")) {
+        document.getElementById("bookStock").value = b.inventory ? b.inventory.stockQuantity : 0;
     }
 
+if (b.category && b.category.id) {
+        document.getElementById("bookCategory").value = b.category.id.toString();
+    }
     document.getElementById("bookModal").classList.remove("hidden");
 }
 
@@ -351,13 +405,15 @@ async function saveBook() {
     const id = document.getElementById("bookId").value;
     const catVal = document.getElementById("bookCategory").value;
     const yearVal = document.getElementById("bookYear").value;
+    const stockVal = document.getElementById("bookStock")?.value;
 
     const book = {
         title: document.getElementById("bookTitle").value,
         authorName: document.getElementById("bookAuthorName").value,
         isbn: document.getElementById("bookIsbn").value,
         publicationYear: yearVal ? parseInt(yearVal) : 0,
-        categoryId: catVal ? catVal : null
+        categoryId: catVal ? catVal : null,
+        stock: stockVal ? parseInt(stockVal) : 0
     };
 
     const errorEl = document.getElementById("bookErrorMsg");

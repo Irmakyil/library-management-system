@@ -7,9 +7,11 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.library.library_system.model.Book;
+import com.library.library_system.model.Inventory;
 import com.library.library_system.model.Loan;
 import com.library.library_system.model.Member;
 import com.library.library_system.repository.BookRepository;
+import com.library.library_system.repository.InventoryRepository;
 import com.library.library_system.repository.LoanRepository;
 import com.library.library_system.repository.MemberRepository;
 
@@ -19,12 +21,15 @@ public class LoanService {
     private final LoanRepository loanRepository;
     private final BookRepository bookRepository;
     private final MemberRepository memberRepository;
+    private final InventoryRepository inventoryRepository;
 
     public LoanService(LoanRepository loanRepository, BookRepository bookRepository,
-            MemberRepository memberRepository) {
+            MemberRepository memberRepository,
+            InventoryRepository inventoryRepository){
         this.loanRepository = loanRepository;
         this.bookRepository = bookRepository;
         this.memberRepository = memberRepository;
+        this.inventoryRepository = inventoryRepository;
     }
 
     public List<Loan> getAllLoans() {
@@ -47,25 +52,31 @@ public class LoanService {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
 
-        // Kitap zaten başkasında mı?
-        if (!book.isAvailable()) {
-            throw new RuntimeException("Bu kitap şu an stokta yok!");
+        // Stok kontrolü (Inventory tablosundan)
+        Inventory inventory = inventoryRepository.findByBookId(bookId);
+
+        if (inventory == null || inventory.getStockQuantity() <= 0) {
+            throw new RuntimeException("Bu kitap stokta kalmadı!");
         }
 
-        // Üyeyi bul
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("Üye bulunamadı!"));
 
-        // Ödünç kaydını oluştur
+        // İşlemi oluştur
         Loan loan = new Loan();
         loan.setBook(book);
         loan.setMember(member);
-        loan.setLoanDate(LocalDate.now()); // Bugünün tarihi
-        loan.setPenalty(0.0);
+        loan.setLoanDate(LocalDate.now());
 
-        // Kitabın durumunu 'Müsait Değil' (false) yap
-        book.setAvailable(false);
-        bookRepository.save(book);
+        // --- STOK DÜŞME İŞLEMİ ---
+        inventory.setStockQuantity(inventory.getStockQuantity() - 1);
+        inventoryRepository.save(inventory);
+
+        // Eğer stok 0'a indiyse kitabın vitrin durumunu 'false' yap
+        if (inventory.getStockQuantity() == 0) {
+            book.setAvailable(false);
+            bookRepository.save(book);
+        }
 
         return loanRepository.save(loan);
     }
@@ -95,12 +106,19 @@ public class LoanService {
             loan.setPenalty(0.0);
         }
 
-        // Kitap geri geldi, durumunu 'Müsait' (true) yap
+        // 5.STOK ARTIRMA İŞLEMİ 
+        Inventory inventory = inventoryRepository.findByBookId(loan.getBook().getId());
+        if (inventory != null) {
+            inventory.setStockQuantity(inventory.getStockQuantity() + 1);
+            inventoryRepository.save(inventory);
+        }
+
+        // Kitap geri geldi, vitrinde tekrar görünür yap
         Book book = loan.getBook();
         book.setAvailable(true);
         bookRepository.save(book);
 
-        // 5. Kaydet ve bitir
+        // 6. Kaydet ve bitir
         return loanRepository.save(loan);
     }
 

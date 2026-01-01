@@ -1,5 +1,7 @@
 package com.library.library_system.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -20,6 +22,7 @@ public class Inventory {
     // Bir kitabın bir envanter kaydı olur
     @OneToOne
     @JoinColumn(name = "book_id", nullable = false, unique = true)
+    @JsonBackReference
     private Book book;
 
     @Column(name = "stock_quantity", nullable = false)
