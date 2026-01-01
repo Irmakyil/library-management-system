@@ -3,7 +3,7 @@ let currentUser = null;
 let allBooks = [];
 let allLoans = []; // Filtreleme için ödünçleri sakla
 let currentPage = 0;
-const pageSize = 12;
+const pageSize = 19;
 let isLoading = false;
 let hasMore = true;
 
@@ -256,8 +256,8 @@ function updateLoadMoreButton() {
 
 const spineColors = ['bg-spine-1', 'bg-spine-2', 'bg-spine-3', 'bg-spine-4', 'bg-spine-5', 'bg-spine-6', 'bg-spine-7'];
 const spineColorMap = {
-    'bg-spine-1': '#263238',
-    'bg-spine-2': '#3e2723',
+    'bg-spine-1': '#546e7a',
+    'bg-spine-2': '#6a1b9a',
     'bg-spine-3': '#b71c1c',
     'bg-spine-4': '#1b5e20',
     'bg-spine-5': '#311b92',
@@ -295,7 +295,7 @@ function renderBooks(books) {
     shelfContainer.appendChild(currentRow);
 
     books.forEach((book, index) => {
-        if (index > 0 && index % 12 === 0) {
+        if (index > 0 && index % 19 === 0) {
             currentRow = document.createElement("div");
             currentRow.className = "shelf-row";
             shelfContainer.appendChild(currentRow);
@@ -448,12 +448,7 @@ function renderActiveLoans(loans) {
         if (new Date() > dueDate) overdueCount++;
     });
 
-    const uniqueReadBooks = new Set(
-        loans.filter(l => l.returnDate !== null && l.book)
-             .map(l => l.book.id)
-    );
-    const totalReadCount = uniqueReadBooks.size;
-    
+    const totalReadCount = loans.filter(l => l.returnDate !== null).length;
     let mostReadGenre = "-";
     let maxCount = 0;
     // Calculate most read genre from ALL loans
@@ -506,7 +501,7 @@ function renderActiveLoans(loans) {
     activeLoans.forEach(loan => {
         const book = loan.book;
         if (book) {
-            if (count > 0 && count % 12 === 0) {
+            if (count > 0 && count % 19 === 0) {
                 currentRow = document.createElement("div");
                 currentRow.className = "shelf-row";
                 shelfContainer.appendChild(currentRow);

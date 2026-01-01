@@ -774,6 +774,7 @@ body.dashboard-page {
     overflow-y: hidden;
     position: relative;
     z-index: 1;
+    justify-content: center;
 }
 
 /* Shelf shadow/depth overlay */
@@ -881,11 +882,11 @@ body.dashboard-page {
 }
 
 .bg-spine-1 {
-    background-color: #263238;
+    background-color: #546e7a;
 }
 
 .bg-spine-2 {
-    background-color: #3e2723;
+    background-color: #6a1b9a;
 }
 
 .bg-spine-3 {
@@ -1152,11 +1153,11 @@ body.dashboard-page {
 }
 
 .bg-cover-1 {
-    background-color: #263238;
+    background-color: #546e7a;
 }
 
 .bg-cover-2 {
-    background-color: #3e2723;
+    background-color: #6a1b9a;
 }
 
 .bg-cover-3 {
