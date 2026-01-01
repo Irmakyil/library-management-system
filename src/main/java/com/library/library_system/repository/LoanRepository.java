@@ -19,4 +19,11 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     // kayıtlarını arar
     List<Loan> findByMember_FirstNameContainingIgnoreCaseOrMember_LastNameContainingIgnoreCaseOrBook_TitleContainingIgnoreCase(
             String firstName, String lastName, String bookTitle);
+
+    // Sidebar için optimize edilmiş sorgu:
+    // 1. Sadece aktif (iade edilmemiş) kitapları getirir (returnDate is null)
+    // 2. @EntityGraph ile book, author ve category ilişkilerini TEK sorguda çeker
+    // (N+1 problemini çözer)
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "book", "book.author", "book.category" })
+    List<Loan> findByMemberIdAndReturnDateIsNull(Long memberId);
 }

@@ -1,4 +1,4 @@
-const API = "http://localhost:8080/api";
+const API = "/api";
 let allCategories = [];
 let allAuthors = [];
 let allAdminBooks = [];
@@ -66,11 +66,13 @@ async function loadAuthors() {
 async function loadDashboardStats() {
     checkAdminAuth();
     try {
-        const [books, members, loans] = await Promise.all([
-            fetch(`${API}/books`).then(r => r.json()),
+        const [booksData, members, loans] = await Promise.all([
+            fetch(`${API}/books?size=1000`).then(r => r.json()),
             fetch(`${API}/members`).then(r => r.json()),
             fetch(`${API}/loans`).then(r => r.json())
         ]);
+
+        const books = booksData.content || booksData;
 
         document.getElementById('stat-total-books').innerText = books.length;
         document.getElementById('stat-total-members').innerText = members.length;
@@ -236,9 +238,20 @@ async function loadBooks() {
     checkAdminAuth();
     loadCategories(); // Load for filters
     loadAuthors();    // Load for filters
-    const res = await fetch(`${API}/books`);
-    allAdminBooks = await res.json();
-    runBookFilters();
+    try {
+        const res = await fetch(`${API}/books?size=1000`);
+        const data = await res.json();
+        allAdminBooks = data.content || data;
+
+        if (!Array.isArray(allAdminBooks)) {
+            allAdminBooks = [];
+        }
+        runBookFilters();
+    } catch (e) {
+        console.error("Kitaplar yüklenemedi:", e);
+        const tbody = document.querySelector("#booksTable tbody");
+        if (tbody) tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; color:red;'>Kitaplar yüklenirken hata oluştu!</td></tr>";
+    }
 }
 
 function runBookFilters() {
@@ -302,15 +315,35 @@ function openBookModal() {
     if (errorEl) errorEl.style.display = 'none';
 }
 
-function editBook(b) {
-    loadCategories();
+async function editBook(b) {
+    await loadCategories(); // Wait for categories to load so options exist
     document.getElementById("modalTitle").innerText = "Kitabı Düzenle";
     document.getElementById("bookId").value = b.id;
     document.getElementById("bookTitle").value = b.title;
     document.getElementById("bookAuthorName").value = b.author?.name || "";
     document.getElementById("bookIsbn").value = b.isbn;
     document.getElementById("bookYear").value = b.publicationYear;
-    document.getElementById("bookCategory").value = b.category?.id;
+
+    // Set value after options are populated
+    if (b.category && b.category.id) {
+        const select = document.getElementById("bookCategory");
+        const targetId = b.category.id.toString();
+
+        // Try setting value
+        select.value = targetId;
+
+        // Verify if set correctly
+        if (select.value !== targetId) {
+            // Fallback: iterate options
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === targetId) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+    }
+
     document.getElementById("bookModal").classList.remove("hidden");
 }
 

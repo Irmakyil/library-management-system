@@ -36,6 +36,12 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getLoansByMember(memberId));
     }
 
+    // Sidebar ceza hesaplaması için hafifletilmiş endpoint
+    @GetMapping("/member/{memberId}/active")
+    public ResponseEntity<List<Loan>> getActiveLoansByMember(@PathVariable Long memberId) {
+        return ResponseEntity.ok(loanService.getActiveLoansByMember(memberId));
+    }
+
     @GetMapping("/search")
     public List<Loan> searchLoans(@org.springframework.web.bind.annotation.RequestParam String query) {
         return loanService.searchLoans(query);

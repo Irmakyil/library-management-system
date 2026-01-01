@@ -2,6 +2,10 @@ const API_BASE = "http://localhost:8080/api";
 let currentUser = null;
 let allBooks = [];
 let allLoans = []; // Filtreleme için ödünçleri sakla
+let currentPage = 0;
+const pageSize = 12;
+let isLoading = false;
+let hasMore = true;
 
 // --- AUTH & INIT ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -53,7 +57,7 @@ function logout() {
 async function updateSidebarPenalty() {
     if (!currentUser) return;
     try {
-        const res = await fetch(`${API_BASE}/loans/member/${currentUser.id}`);
+        const res = await fetch(`${API_BASE}/loans/member/${currentUser.id}/active`);
         const loans = await res.json();
         let totalPenalty = 0;
         loans.forEach(l => {
@@ -161,12 +165,93 @@ async function loadRecommendations() {
 }
 
 // --- ALL BOOKS ---
-async function loadAllBooks() {
+// --- ALL BOOKS ---
+async function loadAllBooks(reset = true) {
+    if (isLoading) return;
+
+    if (reset) {
+        currentPage = 0;
+        allBooks = [];
+        hasMore = true;
+    }
+
+    if (!hasMore && !reset) return;
+
+    isLoading = true;
     try {
-        const res = await fetch(`${API_BASE}/books`);
-        allBooks = await res.json();
-        renderBooks(allBooks);
-    } catch (e) { console.error("Kitaplar yüklenemedi", e); }
+        const res = await fetch(`${API_BASE}/books?page=${currentPage}&size=${pageSize}`);
+        const data = await res.json();
+
+        // Backend Page<Book> dönerse data.content, yoksa data (List)
+        let newBooks = [];
+        if (data.content) {
+            newBooks = data.content;
+            hasMore = !data.last;
+            currentPage++;
+        } else if (Array.isArray(data)) {
+            newBooks = data;
+            hasMore = false;
+        }
+
+        if (reset) {
+            allBooks = newBooks;
+        } else {
+            allBooks = [...allBooks, ...newBooks];
+        }
+
+        filterBooks(); // Mevcut filtreleri koruyarak render et
+        updateLoadMoreButton();
+
+    } catch (e) {
+        console.error("Kitaplar yüklenemedi", e);
+        isLoading = false;
+    } finally {
+        isLoading = false;
+    }
+}
+
+function updateLoadMoreButton() {
+    let btn = document.getElementById("loadMoreBtn");
+    const grid = document.getElementById("booksGrid");
+
+    // Grid yoksa buton işlemine gerek yok
+    if (!grid) return;
+
+    if (!btn) {
+        btn = document.createElement("button");
+        btn.id = "loadMoreBtn";
+        btn.innerText = "Daha Fazla Yükle";
+
+        // Style
+        btn.style.display = "block";
+        btn.style.width = "200px";
+        btn.style.margin = "30px auto";
+        btn.style.padding = "12px 20px";
+        btn.style.background = "#7b1e1e";
+        btn.style.color = "white";
+        btn.style.border = "none";
+        btn.style.borderRadius = "8px";
+        btn.style.fontSize = "16px";
+        btn.style.fontWeight = "600";
+        btn.style.cursor = "pointer";
+        btn.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+        btn.style.transition = "transform 0.1s";
+
+        btn.onmouseover = () => btn.style.background = "#5a1616";
+        btn.onmouseout = () => btn.style.background = "#7b1e1e";
+        btn.onclick = () => loadAllBooks(false);
+
+        // Grid'den sonra ekle
+        grid.parentNode.insertBefore(btn, grid.nextSibling);
+    }
+
+    // Eğer daha fazla veri yoksa gizle
+    if (hasMore) {
+        btn.style.display = "block";
+        btn.innerHTML = isLoading ? "Yükleniyor..." : "Daha Fazla Yükle";
+    } else {
+        btn.style.display = "none";
+    }
 }
 
 const spineColors = ['bg-spine-1', 'bg-spine-2', 'bg-spine-3', 'bg-spine-4', 'bg-spine-5', 'bg-spine-6', 'bg-spine-7'];
@@ -359,7 +444,7 @@ function renderActiveLoans(loans) {
 
         const loanDate = new Date(loan.loanDate);
         const dueDate = new Date(loanDate);
-        dueDate.setDate(dueDate.getDate() + 15);
+        dueDate.setDate(dueDate.getDate() + 1);
         if (new Date() > dueDate) overdueCount++;
     });
 
@@ -667,7 +752,7 @@ function openBookModal(book, loan = null) {
 
         const loanDate = new Date(loan.loanDate);
         const dueDate = new Date(loanDate);
-        dueDate.setDate(dueDate.getDate() + 15);
+        dueDate.setDate(dueDate.getDate() + 1);
         const today = new Date();
         const diffTime = dueDate - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

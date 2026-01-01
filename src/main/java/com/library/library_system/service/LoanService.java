@@ -36,6 +36,11 @@ public class LoanService {
         return loanRepository.findByMemberId(memberId);
     }
 
+    // Sidebar performans optimizasyonu için: Sadece aktif ödünçleri getir
+    public List<Loan> getActiveLoansByMember(Long memberId) {
+        return loanRepository.findByMemberIdAndReturnDateIsNull(memberId);
+    }
+
     // --- ÖDÜNÇ ALMA İŞLEMİ ---
     public Loan createLoan(Long bookId, Long memberId) {
         // Kitabı bul

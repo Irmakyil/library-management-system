@@ -2,6 +2,9 @@ package com.library.library_system.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,17 +21,21 @@ import com.library.library_system.service.BookService;
 public class BookController {
 
     private final BookService bookService;
-    private final com.library.library_system.service.RecommendationService recommendationService; 
+    private final com.library.library_system.service.RecommendationService recommendationService;
 
-    public BookController(BookService bookService, com.library.library_system.service.RecommendationService recommendationService) {
+    public BookController(BookService bookService,
+            com.library.library_system.service.RecommendationService recommendationService) {
         this.bookService = bookService;
         this.recommendationService = recommendationService;
     }
 
-    // GET İsteği: Tüm kitapları listele
+    // GET İsteği: Tüm kitapları listele (Pagination eklendi)
     @GetMapping
-    public List<Book> getAllBooks() {
-        return bookService.getAllBooks();
+    public Page<Book> getAllBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookService.getAllBooks(pageable);
     }
 
     // POST İsteği: Yeni kitap ekle

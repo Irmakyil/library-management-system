@@ -1,6 +1,8 @@
 package com.library.library_system.service;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,11 @@ public class BookService {
     // Tüm kitapları getir
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
+    }
+
+    // Sayfalı getir
+    public Page<Book> getAllBooks(Pageable pageable) {
+        return bookRepository.findAll(pageable);
     }
 
     // Yeni kitap ekle
