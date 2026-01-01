@@ -1,29 +1,50 @@
 package com.library.library_system.repository;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.util.List; // EKSİK OLAN IMPORT BU
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.library.library_system.model.Loan;
 
 @Repository
 public interface LoanRepository extends JpaRepository<Loan, Long> {
-    // Belirli bir üyeye ait tüm ödünç kayıtlarını getirir
+
+    // --- DASHBOARD İÇİN GEREKLİ OLANLAR ---
+    
+    // 1. Son 5 Hareket (ID'ye göre tersten sırala)
+    List<Loan> findTop5ByOrderByIdDesc();
+
+    // 2. Acil İade Bekleyenler (Gecikenler + Sayfalama desteği) 
+    @Query("SELECT l FROM Loan l WHERE l.returnDate IS NULL AND l.loanDate < :overdueLimit ORDER BY l.loanDate ASC")
+    List<Loan> findUrgentOverdueLoans(@Param("overdueLimit") LocalDate overdueLimit, Pageable pageable);
+
+    // 3. İstatistikler
+    long countByReturnDateIsNull();
+
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.returnDate IS NULL AND l.loanDate < :overdueLimit")
+    long countOverdueLoans(@Param("overdueLimit") LocalDate overdueLimit);
+
+
+    // --- LOAN SERVICE & MEMBER SERVICE İÇİN GEREKLİ OLANLAR ---
+
+    // Bir üyenin tüm geçmişi
     List<Loan> findByMemberId(Long memberId);
 
-    // Belirli bir üyeye ait tüm ödünç kayıtlarını siler
+    // Bir üyenin sadece aktif (iade edilmemiş) kitapları
+    List<Loan> findByMemberIdAndReturnDateIsNull(Long memberId);
+
+    // Üye silinirken geçmişini temizlemek için
+    @Modifying
+    @Transactional
     void deleteByMemberId(Long memberId);
 
-    // Üyenin adı soyadı veya kitabın başlığında geçen ifadeye göre ödünç
-    // kayıtlarını arar
-    List<Loan> findByMember_FirstNameContainingIgnoreCaseOrMember_LastNameContainingIgnoreCaseOrBook_TitleContainingIgnoreCase(
-            String firstName, String lastName, String bookTitle);
-
-    // Sidebar için optimize edilmiş sorgu:
-    // 1. Sadece aktif (iade edilmemiş) kitapları getirir (returnDate is null)
-    // 2. @EntityGraph ile book, author ve category ilişkilerini TEK sorguda çeker
-    // (N+1 problemini çözer)
-    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "book", "book.author", "book.category" })
-    List<Loan> findByMemberIdAndReturnDateIsNull(Long memberId);
+    // Detaylı Arama (Üye adı, soyadı veya kitap adına göre)
+    List<Loan> findByMember_FirstNameContainingIgnoreCaseOrMember_LastNameContainingIgnoreCaseOrBook_TitleContainingIgnoreCase(String firstName, String lastName, String bookTitle);
 }

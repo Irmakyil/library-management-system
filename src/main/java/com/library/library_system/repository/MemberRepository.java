@@ -1,5 +1,7 @@
 package com.library.library_system.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -7,14 +9,13 @@ import com.library.library_system.model.Member;
 
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
-    // Email adresine göre üyeyi bulur (login/rol kontrolü gibi işlemlerde
-    // kullanılır)
+    
+    // E-posta ile bulma (Login için)
     Member findByEmail(String email);
 
-    // Adına göre üyeyi bulur
-    Member findByFirstName(String firstName);
+    // İsim veya Soyisim ile arama
+    List<Member> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String firstName, String lastName);
 
-    // Üyenin adında veya soyadında geçen ifadeye göre arama yapar
-    java.util.List<Member> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String firstName,
-            String lastName);
+    // Dashboard istatistikleri için (Üye sayısını almak için)
+    long countByRole(String role);
 }
