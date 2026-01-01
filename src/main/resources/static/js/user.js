@@ -448,10 +448,15 @@ function renderActiveLoans(loans) {
         if (new Date() > dueDate) overdueCount++;
     });
 
-    const totalReadCount = loans.filter(l => l.returnDate !== null).length;
+    const uniqueReadBooks = new Set(
+        loans.filter(l => l.returnDate !== null && l.book)
+            .map(l => l.book.id)
+    );
+    const totalReadCount = uniqueReadBooks.size;
+
     let mostReadGenre = "-";
     let maxCount = 0;
-    // Calculate most read genre from ALL loans
+
     const allGenreCounts = {};
     loans.forEach(loan => {
         const book = loan.book;
