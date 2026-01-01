@@ -1,29 +1,19 @@
 -- Kütüphane Yönetim Sistemi Veritabanı Şeması 
 
--- Önce bağımlı tabloları temizle (gerekirse)
--- DROP TABLE IF EXISTS loans;
--- DROP TABLE IF EXISTS inventory;
--- DROP TABLE IF EXISTS books;
--- DROP TABLE IF EXISTS authors;
--- DROP TABLE IF EXISTS categories;
--- DROP TABLE IF EXISTS members;
--- DROP TABLE IF EXISTS branches;
-
--- 1. Yazarlar (Authors) Tablosu (Books tablosundan önce oluşturulmalı)
+-- 1. Yazarlar (Authors) Tablosu
 CREATE TABLE IF NOT EXISTS authors (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     bio VARCHAR(1000)
 );
 
--- 2. Kategoriler (Categories) Tablosu (Books tablosundan önce oluşturulmalı)
+-- 2. Kategoriler (Categories) Tablosu
 CREATE TABLE IF NOT EXISTS categories (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) UNIQUE NOT NULL
 );
 
 -- 3. Kitaplar (Books) Tablosu
--- İlişkiler: Author ve Category tablolarına ID ile bağlanır.
 CREATE TABLE IF NOT EXISTS books (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -34,9 +24,9 @@ CREATE TABLE IF NOT EXISTS books (
     author_id BIGINT NOT NULL,
     category_id BIGINT,
 
-    -- Durum Sütunları
+    -- Durum
     available BOOLEAN DEFAULT TRUE,
-    updated_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     -- Foreign Keys
     CONSTRAINT fk_book_author FOREIGN KEY (author_id) REFERENCES authors(id),
@@ -56,7 +46,8 @@ CREATE TABLE IF NOT EXISTS members (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'MEMBER', -- 'ADMIN' veya 'MEMBER'
 );
 
 -- 6. Ödünç İşlemleri (Loans) Tablosu
