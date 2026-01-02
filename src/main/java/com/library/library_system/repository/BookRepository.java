@@ -46,4 +46,9 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query(value = "SELECT * FROM books ORDER BY RANDOM() LIMIT 4", nativeQuery = true)
     List<Book> findRandomBooks();
 
+    @Query(value = "SELECT * FROM books WHERE id NOT IN (:excludedIds) ORDER BY RANDOM() LIMIT :limit", nativeQuery = true)
+    List<Book> findRandomBooksExcept(
+            @org.springframework.data.repository.query.Param("excludedIds") List<Long> excludedIds,
+            @org.springframework.data.repository.query.Param("limit") int limit);
+
 }

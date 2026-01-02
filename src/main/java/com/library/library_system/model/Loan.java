@@ -1,6 +1,6 @@
 package com.library.library_system.model;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,31 +29,62 @@ public class Loan {
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
-    private LocalDate loanDate;   // Veriliş Tarihi
-    private LocalDate returnDate; // İade Tarihi
+    private LocalDateTime loanDate; // Veriliş Tarihi
+    private LocalDateTime returnDate; // İade Tarihi
 
     @Column(name = "penalty")
     private Double penalty = 0.0; // Varsayılan 0.0 olsun
 
     // --- Constructorlar ---
-    public Loan() {}
+    public Loan() {
+    }
 
     // --- Getter & Setter ---
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public Member getMember() { return member; }
-    public void setMember(Member member) { this.member = member; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Book getBook() { return book; }
-    public void setBook(Book book) { this.book = book; }
+    public Member getMember() {
+        return member;
+    }
 
-    public LocalDate getLoanDate() { return loanDate; }
-    public void setLoanDate(LocalDate loanDate) { this.loanDate = loanDate; }
+    public void setMember(Member member) {
+        this.member = member;
+    }
 
-    public LocalDate getReturnDate() { return returnDate; }
-    public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
+    public Book getBook() {
+        return book;
+    }
 
-    public Double getPenalty() { return penalty; }
-    public void setPenalty(Double penalty) { this.penalty = penalty; }
+    public void setBook(Book book) {
+        this.book = book;
+    }
+
+    public LocalDateTime getLoanDate() {
+        return loanDate;
+    }
+
+    public void setLoanDate(LocalDateTime loanDate) {
+        this.loanDate = loanDate;
+    }
+
+    public LocalDateTime getReturnDate() {
+        return returnDate;
+    }
+
+    public void setReturnDate(LocalDateTime returnDate) {
+        this.returnDate = returnDate;
+    }
+
+    public Double getPenalty() {
+        return penalty;
+    }
+
+    public void setPenalty(Double penalty) {
+        this.penalty = penalty;
+    }
 }

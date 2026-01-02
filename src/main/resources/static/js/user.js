@@ -64,15 +64,35 @@ function logout() {
     window.location.href = "../login.html";
 }
 
+
+function parseLocalDate(dateData) {
+    if (!dateData) return new Date();
+    if (Array.isArray(dateData)) {
+        // [yyyy, mm, dd, HH, MM, SS, nnn]
+        const year = dateData[0];
+        const month = dateData[1] - 1;
+        const day = dateData[2];
+        const hour = dateData[3] || 0;
+        const minute = dateData[4] || 0;
+        const second = dateData[5] || 0;
+        return new Date(year, month, day, hour, minute, second);
+    }
+    return new Date(dateData);
+}
+
 async function updateSidebarPenalty() {
     if (!currentUser) return;
     try {
-        const res = await fetch(`${API_BASE}/loans/member/${currentUser.id}/active`);
+        const res = await fetch(`${API_BASE}/loans/member/${currentUser.id}`);
         const loans = await res.json();
         let totalPenalty = 0;
+
         loans.forEach(l => {
-            if (l.penalty) totalPenalty += l.penalty;
+            if (l.returnDate && l.penalty) {
+                totalPenalty += l.penalty;
+            }
         });
+
         const sidebarPenalty = document.getElementById("sidebarPenaltyDisplay");
         if (sidebarPenalty) sidebarPenalty.innerText = totalPenalty.toFixed(2) + " TL";
     } catch (e) {
@@ -83,6 +103,8 @@ async function updateSidebarPenalty() {
 // --- DASHBOARD (HOME) FUNCTIONS ---
 async function initDashboard() {
     await checkUserAuth();
+    updateSidebarPenalty();
+
     // Her iki veri kümesini paralel olarak getir (Öncelikli İçerik)
     const [recs, booksData] = await Promise.all([
         fetchRecommendations(),
@@ -96,7 +118,6 @@ async function initDashboard() {
     // Filtreleri ve diğer meta verileri yükle (Ertelenmiş)
     loadCategories();
     loadAuthors();
-    updateSidebarPenalty();
 
     // Sonsuz kaydırma
     const mainContent = document.querySelector('.main-content');
@@ -489,10 +510,12 @@ function renderActiveLoans(loans) {
             genreCounts[catName] = (genreCounts[catName] || 0) + 1;
         }
 
-        const loanDate = new Date(loan.loanDate);
+        const loanDate = parseLocalDate(loan.loanDate);
         const dueDate = new Date(loanDate);
-        dueDate.setDate(dueDate.getDate() + 1);
-        if (new Date() > dueDate) overdueCount++;
+        dueDate.setDate(dueDate.getDate() + 2);
+
+        const now = new Date();
+        if (now > dueDate) overdueCount++;
     });
 
     const uniqueReadBooks = new Set(
@@ -806,19 +829,31 @@ function openBookModal(book, loan = null) {
         borrowBtn.style.opacity = "1";
         borrowBtn.style.cursor = "pointer";
 
-        const loanDate = new Date(loan.loanDate);
+        const loanDate = parseLocalDate(loan.loanDate);
         const dueDate = new Date(loanDate);
-        dueDate.setDate(dueDate.getDate() + 1);
-        const today = new Date();
-        const diffTime = dueDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        dueDate.setDate(dueDate.getDate() + 2); // Exact 48h from borrow time
+
+        const now = new Date();
+        const diffTime = dueDate - now; // Milliseconds
 
         if (statusEl) {
-            if (diffDays >= 0) {
-                statusEl.innerText = `İade İçin ${diffDays} Gün Kaldı`;
-                statusEl.style.color = "#f5efea";
+            if (diffTime > 0) {
+                const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+
+                if (diffHours < 24) {
+                    // Less than 24 hours remaining
+                    statusEl.innerText = `İade İçin Son ${diffHours} Saat!`;
+                    statusEl.style.color = "#ffb74d"; // Warning color
+                } else {
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    statusEl.innerText = `İade İçin ${diffDays} Gün Kaldı`;
+                    statusEl.style.color = "#f5efea";
+                }
             } else {
-                statusEl.innerText = `SÜRESİ GEÇTİ! (${Math.abs(diffDays)} Gün)`;
+                // Overdue
+                const overdueDiff = Math.abs(diffTime);
+                const overdueDays = Math.ceil(overdueDiff / (1000 * 60 * 60 * 24));
+                statusEl.innerText = `SÜRESİ GEÇTİ! (${overdueDays} Gün)`;
                 statusEl.style.color = "#ff5252";
             }
         }

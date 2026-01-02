@@ -1,6 +1,6 @@
 package com.library.library_system.controller;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,8 +47,8 @@ public class DashboardController {
         stats.put("activeLoans", activeLoans);
 
         // Gecikenler
-        // Gecikme kuralı: loanDate + 1 gün < now => loanDate < now - 1
-        LocalDate dueDateThreshold = LocalDate.now().minusDays(1);
+        // Gecikme kuralı: loanDate + 2 gün < now => loanDate < now - 2
+        LocalDateTime dueDateThreshold = LocalDateTime.now().minusDays(2);
         long overdueLoans = loanRepository.countByReturnDateIsNullAndLoanDateBefore(dueDateThreshold);
         stats.put("overdueLoans", overdueLoans);
 
@@ -62,7 +62,7 @@ public class DashboardController {
 
     @GetMapping("/overdue-loans")
     public List<Loan> getOverdueLoans() {
-        LocalDate dueDateThreshold = LocalDate.now().minusDays(1);
+        LocalDateTime dueDateThreshold = LocalDateTime.now().minusDays(2);
         return loanRepository.findTop5ByReturnDateIsNullAndLoanDateBeforeOrderByLoanDateAsc(dueDateThreshold);
     }
 }

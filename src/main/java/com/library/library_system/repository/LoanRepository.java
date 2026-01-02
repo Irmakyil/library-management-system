@@ -40,12 +40,12 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
 
         // Gecikmiş: İade edilmemiş (returnDate null) VE İade süresi (loanDate + 1 gün)
         // geçmiş (loanDate < (now - 1 gün))
-        long countByReturnDateIsNullAndLoanDateBefore(java.time.LocalDate date);
+        long countByReturnDateIsNullAndLoanDateBefore(java.time.LocalDateTime date);
 
         // Son 5 işlem (İade veya Ödünç tarihine göre)
         @org.springframework.data.jpa.repository.Query("SELECT l FROM Loan l ORDER BY CASE WHEN l.returnDate IS NOT NULL THEN l.returnDate ELSE l.loanDate END DESC, l.id DESC")
         List<Loan> findRecentActivity(org.springframework.data.domain.Pageable pageable);
 
         // Gecikenler listesi (Top 5)
-        List<Loan> findTop5ByReturnDateIsNullAndLoanDateBeforeOrderByLoanDateAsc(java.time.LocalDate date);
+        List<Loan> findTop5ByReturnDateIsNullAndLoanDateBeforeOrderByLoanDateAsc(java.time.LocalDateTime date);
 }

@@ -1,6 +1,6 @@
 package com.library.library_system.service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -66,7 +66,7 @@ public class LoanService {
         Loan loan = new Loan();
         loan.setBook(book);
         loan.setMember(member);
-        loan.setLoanDate(LocalDate.now());
+        loan.setLoanDate(LocalDateTime.now());
 
         // --- STOK DÜŞME İŞLEMİ ---
         inventory.setStockQuantity(inventory.getStockQuantity() - 1);
@@ -92,14 +92,21 @@ public class LoanService {
             throw new RuntimeException("Bu kitap zaten iade edilmiş!");
         }
 
-        // İade tarihini bugün yap
-        loan.setReturnDate(LocalDate.now());
+        // İade tarihini şu an yap
+        loan.setReturnDate(LocalDateTime.now());
 
         // CEZA HESAPLAMA
-        LocalDate dueDate = loan.getLoanDate().plusDays(1); // Deneme için 1 gün yaptım (Sena)
+        LocalDateTime dueDate = loan.getLoanDate().plusDays(2);
 
         if (loan.getReturnDate().isAfter(dueDate)) {
-            long overdueDays = ChronoUnit.DAYS.between(dueDate, loan.getReturnDate());
+            // Tam 24 saatlik döngüler halinde ceza hesapla
+            // Örn: 1 saat gecikirse bile 1 gün sayılır
+            java.time.Duration diff = java.time.Duration.between(dueDate, loan.getReturnDate());
+            long overdueDays = (long) Math.ceil(diff.toMinutes() / (24.0 * 60.0));
+            // Math.ceil 0.1 -> 1.0 verir.
+            if (overdueDays < 1)
+                overdueDays = 1;
+
             double penaltyAmount = overdueDays * 5.0; // Günlük 5 TL
             loan.setPenalty(penaltyAmount);
         } else {

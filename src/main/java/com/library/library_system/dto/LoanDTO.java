@@ -1,6 +1,6 @@
 package com.library.library_system.dto;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class LoanDTO {
     private Long id;
@@ -10,13 +10,13 @@ public class LoanDTO {
     private String memberName;
     private String authorName;
     private String categoryName;
-    private LocalDate loanDate;
-    private LocalDate returnDate;
+    private LocalDateTime loanDate;
+    private LocalDateTime returnDate;
     private Double penalty;
 
     public LoanDTO(Long id, Long bookId, Long categoryId, String bookTitle, String memberName, String authorName,
             String categoryName,
-            LocalDate loanDate, LocalDate returnDate, Double penalty) {
+            LocalDateTime loanDate, LocalDateTime returnDate, Double penalty) {
         this.id = id;
         this.bookId = bookId;
         this.categoryId = categoryId;
@@ -29,7 +29,7 @@ public class LoanDTO {
         this.penalty = penalty;
     }
 
-    public LoanDTO(Long id, String bookTitle, LocalDate loanDate, LocalDate returnDate, Double penalty) {
+    public LoanDTO(Long id, String bookTitle, LocalDateTime loanDate, LocalDateTime returnDate, Double penalty) {
         this.id = id;
         this.bookTitle = bookTitle;
         this.loanDate = loanDate;
@@ -66,11 +66,11 @@ public class LoanDTO {
         return categoryName;
     }
 
-    public LocalDate getLoanDate() {
+    public LocalDateTime getLoanDate() {
         return loanDate;
     }
 
-    public LocalDate getReturnDate() {
+    public LocalDateTime getReturnDate() {
         return returnDate;
     }
 
