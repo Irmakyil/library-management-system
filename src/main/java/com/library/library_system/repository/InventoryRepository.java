@@ -9,4 +9,7 @@ import com.library.library_system.model.Inventory;
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     // Kitap ID'sine göre stok bulmak için özel metot
     Inventory findByBookId(Long bookId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(i.stockQuantity), 0) FROM Inventory i")
+    Integer sumTotalStock();
 }

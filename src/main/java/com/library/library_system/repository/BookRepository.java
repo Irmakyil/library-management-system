@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.library.library_system.model.Book;
+import com.library.library_system.dto.BookDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -14,6 +15,10 @@ import org.springframework.data.jpa.repository.EntityGraph;
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
     // JpaRepository sayesinde save, findAll, findById gibi metotlar hazır gelir.
+
+    // Optimized for User Dashboard
+    @Query("SELECT new com.library.library_system.dto.BookDTO(b.id, b.title, a.name, a.id, c.name, c.id, b.isbn, b.available) FROM Book b LEFT JOIN b.author a LEFT JOIN b.category c")
+    Page<BookDTO> findAllDTO(Pageable pageable);
 
     @Override
     @EntityGraph(attributePaths = { "author", "category", "inventory" })

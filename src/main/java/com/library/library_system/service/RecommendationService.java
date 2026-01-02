@@ -24,27 +24,26 @@ public class RecommendationService {
     }
 
     public List<Book> recommendBooks(Long memberId) {
-        // 1. Kullanıcının geçmiş ödünç aldığı kitapları getir
-        List<Loan> history = loanRepository.findByMemberId(memberId);
+        // Kullanıcının geçmiş ödünç aldığı kitapları getir (Optimize edilmiş DTO)
+        List<com.library.library_system.dto.LoanDTO> history = loanRepository.findDTOByMemberId(memberId);
 
-        // A. Kullanıcı yeniyse (Geçmişi yoksa) rastgele kitap öner
+        // Kullanıcı yeniyse (Geçmişi yoksa) rastgele kitap öner
         if (history.isEmpty()) {
             return bookRepository.findRandomBooks();
         }
 
-        // 2. Kullanıcının okuduğu kitapların ID'lerini listele (Tekrar önermemek için)
+        // Kullanıcının okuduğu kitapların ID'lerini listele (Tekrar önermemek için)
         List<Long> readBookIds = history.stream()
-                .map(loan -> loan.getBook().getId())
+                .map(loan -> loan.getBookId())
                 .collect(Collectors.toList());
 
-        // 3. ALGORİTMA: En çok okunan kategoriyi bul
+        // ALGORİTMA: En çok okunan kategoriyi bul
         // Map yapısı: Kategori -> Okunma Sayısı (Örn: Bilim Kurgu -> 5, Roman -> 2)
         Map<Long, Integer> categoryFrequency = new HashMap<>();
 
-        for (Loan loan : history) {
-            Book book = loan.getBook();
-            if (book.getCategory() != null) {
-                Long catId = book.getCategory().getId();
+        for (com.library.library_system.dto.LoanDTO loan : history) {
+            Long catId = loan.getCategoryId();
+            if (catId != null) {
                 categoryFrequency.put(catId, categoryFrequency.getOrDefault(catId, 0) + 1);
             }
         }
@@ -60,15 +59,15 @@ public class RecommendationService {
             }
         }
 
-        // 4. Eğer favori kategori bulunduysa, o kategoriden okunmamış kitapları getir
+        // Eğer favori kategori bulunduysa, o kategoriden okunmamış kitapları getir
         if (favoriteCategoryId != null) {
             List<Book> recommendations = bookRepository.findByCategoryIdAndIdNotIn(favoriteCategoryId, readBookIds);
-            
+
             // Eğer o kategoride okunacak kitap kalmadıysa rastgele öner
             if (recommendations.isEmpty()) {
                 return bookRepository.findRandomBooks();
             }
-            
+
             // En fazla 4 tane öner
             return recommendations.stream().limit(4).collect(Collectors.toList());
         }

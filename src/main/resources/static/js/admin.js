@@ -6,9 +6,9 @@ let allAdminLoans = [];
 
 function getAuthHeaders() {
     const token = localStorage.getItem("token");
-    return { 
+    return {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + token 
+        "Authorization": "Bearer " + token
     };
 }
 
@@ -74,42 +74,20 @@ async function loadAuthors() {
 async function loadDashboardStats() {
     checkAdminAuth();
     try {
-        const [booksData, members, loans] = await Promise.all([
-            fetch(`${API}/books?size=1000`).then(r => r.json()),
-            fetch(`${API}/members`).then(r => r.json()),
-            fetch(`${API}/loans`).then(r => r.json())
+        const [stats, recentLoans, overdueLoans] = await Promise.all([
+            fetch(`${API}/dashboard/stats`).then(r => r.json()),
+            fetch(`${API}/dashboard/recent-loans`).then(r => r.json()),
+            fetch(`${API}/dashboard/overdue-loans`).then(r => r.json())
         ]);
 
-        // 1. KİTAP SAYISI (STOKLARI TOPLAYARAK HESAPLA)
-        const books = booksData.content || booksData;
-        let totalStock = 0;
+        // İstatistikleri yaz
+        document.getElementById('stat-total-books').innerText = stats.totalBooks;
+        document.getElementById('stat-total-members').innerText = stats.totalMembers;
+        document.getElementById('stat-active-loans').innerText = stats.activeLoans;
+        document.getElementById('stat-overdue-loans').innerText = stats.overdueLoans;
 
-        if (Array.isArray(books)) {
-            // reduce fonksiyonu ile tüm kitapların stoklarını topluyoruz
-            totalStock = books.reduce((toplam, kitap) => {
-                // Eğer stok bilgisi varsa onu ekle, yoksa 0 ekle
-                const stokAdedi = (kitap.inventory && kitap.inventory.stockQuantity) ? kitap.inventory.stockQuantity : 0;
-                return toplam + stokAdedi;
-            }, 0);
-        }
-        document.getElementById('stat-total-books').innerText = totalStock; // Toplam stok yazılır
-
-        // 2. ÜYE SAYISI
-        document.getElementById('stat-total-members').innerText = members.length;
-
-        // 3. AKTİF ÖDÜNÇ
-        const activeLoans = loans.filter(l => l.returnDate === null);
-        document.getElementById('stat-active-loans').innerText = activeLoans.length;
-
-        // 4. GECİKENLER
-        const overdue = activeLoans.filter(l => {
-            const dueDate = new Date(l.loanDate);
-            dueDate.setDate(dueDate.getDate() + 1); // Kural: 1 gün
-            return new Date() > dueDate;
-        });
-        document.getElementById('stat-overdue-loans').innerText = overdue.length;
-
-        renderDashboardWidgets(loans, overdue);
+        // Widget'ları render et
+        renderDashboardWidgets(recentLoans, overdueLoans);
     } catch (e) {
         console.error("Error loading dashboard stats:", e);
     }
@@ -236,7 +214,7 @@ async function openUserDetail(id, name) {
     }
 
     loans.forEach(l => {
-        const bookTitle = l.book ? l.book.title : "Silinmiş Kitap";
+        const bookTitle = l.bookTitle || "Silinmiş Kitap";
         if (l.penalty) penalty += l.penalty;
 
         if (l.returnDate === null) {
@@ -330,7 +308,7 @@ function renderBooks(books) {
         statusSpan.style.padding = "4px 8px";
         statusSpan.style.borderRadius = "4px";
         statusSpan.style.fontSize = "0.85rem";
-        
+
         if (stock > 0) {
             statusSpan.textContent = "Müsait";
             statusSpan.style.color = "#10b981";
@@ -375,7 +353,7 @@ function openBookModal() {
     document.getElementById("bookYear").value = "";
     document.getElementById("bookYear").value = "";
     document.getElementById("bookModal").classList.remove("hidden");
-    if(document.getElementById("bookStock")) document.getElementById("bookStock").value = "1";
+    if (document.getElementById("bookStock")) document.getElementById("bookStock").value = "1";
 
     // Clear error message
     const errorEl = document.getElementById("bookErrorMsg");
@@ -391,11 +369,11 @@ async function editBook(b) {
     document.getElementById("bookIsbn").value = b.isbn;
     document.getElementById("bookYear").value = b.publicationYear;
 
-    if(document.getElementById("bookStock")) {
+    if (document.getElementById("bookStock")) {
         document.getElementById("bookStock").value = b.inventory ? b.inventory.stockQuantity : 0;
     }
 
-if (b.category && b.category.id) {
+    if (b.category && b.category.id) {
         document.getElementById("bookCategory").value = b.category.id.toString();
     }
     document.getElementById("bookModal").classList.remove("hidden");
@@ -471,8 +449,8 @@ function runLoanFilters() {
     const query = document.getElementById("adminLoanSearch").value.toLowerCase();
 
     let filtered = allAdminLoans.filter(l => {
-        const memberName = (l.member ? l.member.firstName + " " + l.member.lastName : "").toLowerCase();
-        const bookTitle = (l.book ? l.book.title : "").toLowerCase();
+        const memberName = (l.memberName || "").toLowerCase();
+        const bookTitle = (l.bookTitle || "").toLowerCase();
 
         const matchesSearch = !query || memberName.includes(query) || bookTitle.includes(query);
 
@@ -514,8 +492,8 @@ function renderLoans(loans) {
 
         tbody.innerHTML += `
             <tr>
-                <td>${l.member ? l.member.firstName + ' ' + l.member.lastName : '-'}</td>
-                <td>${l.book ? l.book.title : '-'}</td>
+                <td>${l.memberName || '-'}</td>
+                <td>${l.bookTitle || '-'}</td>
                 <td>${l.loanDate}</td>
                 <td>${l.returnDate || '-'}</td>
                 <td>${statusHtml}</td>

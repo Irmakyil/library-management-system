@@ -25,9 +25,9 @@ public class BookService {
 
     // Constructor Dependency Injection
     public BookService(BookRepository bookRepository,
-                       AuthorRepository authorRepository,
-                       CategoryRepository categoryRepository,
-                       InventoryRepository inventoryRepository) {
+            AuthorRepository authorRepository,
+            CategoryRepository categoryRepository,
+            InventoryRepository inventoryRepository) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.categoryRepository = categoryRepository;
@@ -42,6 +42,10 @@ public class BookService {
     // Sayfalı getir
     public Page<Book> getAllBooks(Pageable pageable) {
         return bookRepository.findAll(pageable);
+    }
+
+    public Page<com.library.library_system.dto.BookDTO> getAllBooksDTO(Pageable pageable) {
+        return bookRepository.findAllDTO(pageable);
     }
 
     // Yeni kitap ekle
@@ -83,11 +87,11 @@ public class BookService {
     public Book updateBook(Long id, com.library.library_system.dto.BookRequest request) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Kitap bulunamadı"));
-        
+
         // Kitap bilgilerini güncelle
         updateBookFromRequest(book, request);
 
-        // STOK GÜNCELLEME KISMI 
+        // STOK GÜNCELLEME KISMI
         Inventory inventory = book.getInventory();
         if (inventory == null) {
             // Eğer daha önce stoğu hiç yoksa (eski veri) yeni oluştur
@@ -96,8 +100,7 @@ public class BookService {
             // Varsa güncelle
             inventory.setStockQuantity(request.getStock());
         }
-        inventoryRepository.save(inventory); 
-
+        inventoryRepository.save(inventory);
 
         // Stok durumuna göre 'available' (müsaitlik) bilgisini güncelle
         // Stok > 0 ise true, değilse false
@@ -146,7 +149,7 @@ public class BookService {
             book.setCategory(category);
         }
 
-        // Yeni kitap eklenirken available true olsun 
+        // Yeni kitap eklenirken available true olsun
         if (book.getId() == null) {
             book.setAvailable(true);
         }

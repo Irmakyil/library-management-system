@@ -25,14 +25,14 @@ public class LoanController {
     }
 
     @GetMapping
-    public List<Loan> getAllLoans() {
+    public List<com.library.library_system.dto.LoanDTO> getAllLoans() {
         return loanService.getAllLoans();
     }
 
     // --- ÜYEYE GÖRE LİSTELEME ---
     // Frontend'de 'loadMyLoans' fonksiyonunun çalışması için bu gerekli
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<Loan>> getLoansByMember(@PathVariable Long memberId) {
+    public ResponseEntity<List<com.library.library_system.dto.LoanDTO>> getLoansByMember(@PathVariable Long memberId) {
         return ResponseEntity.ok(loanService.getLoansByMember(memberId));
     }
 

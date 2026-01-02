@@ -50,8 +50,6 @@ function checkUserAuth() {
         const sidebarWelcome = document.getElementById("sidebarWelcomeMsg");
         if (sidebarWelcome) sidebarWelcome.innerText = `${currentUser.firstName} ${currentUser.lastName}`;
 
-        // Sidebar ceza bilgisini güncelle
-        updateSidebarPenalty();
 
     } catch (e) {
         console.error("Auth error:", e);
@@ -85,21 +83,29 @@ async function updateSidebarPenalty() {
 // --- DASHBOARD (HOME) FUNCTIONS ---
 async function initDashboard() {
     await checkUserAuth();
-    loadRecommendations();
-    loadAllBooks();
+    // Her iki veri kümesini paralel olarak getir (Öncelikli İçerik)
+    const [recs, booksData] = await Promise.all([
+        fetchRecommendations(),
+        fetchBooks(0, pageSize)
+    ]);
+
+    // Her ikisini birlikte ve anında render et
+    renderRecommendations(recs);
+    handleBooksData(booksData, true);
+
+    // Filtreleri ve diğer meta verileri yükle (Ertelenmiş)
     loadCategories();
     loadAuthors();
+    updateSidebarPenalty();
 
-    loadAuthors();
-
-    // Infinite Scroll: .main-content içinde scroll olayını dinle
+    // Sonsuz kaydırma
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
         mainContent.addEventListener('scroll', () => {
             // ScrollTop + ClientHeight >= ScrollHeight - Threshold
             if ((mainContent.scrollTop + mainContent.clientHeight) >= mainContent.scrollHeight - 300) {
                 if (hasMore && !isLoading && window.location.pathname.includes("dashboard.html")) {
-                    loadAllBooks(false);
+                    loadMoreBooks();
                 }
             }
         });
@@ -107,92 +113,126 @@ async function initDashboard() {
 }
 
 // --- RECOMMENDATIONS ---
-async function loadRecommendations() {
-    if (!currentUser) return;
-
+async function fetchRecommendations() {
+    if (!currentUser) return [];
     try {
-        const [recRes, loanRes] = await Promise.all([
-            fetch(`${API_BASE}/books/recommendations/${currentUser.id}`),
-            fetch(`${API_BASE}/loans/member/${currentUser.id}`)
-        ]);
-
+        const recRes = await fetch(`${API_BASE}/books/recommendations/${currentUser.id}`);
         if (!recRes.ok) throw new Error("Recommendation API error");
-
-        let books = await recRes.json();
-
-        // Kullanıcının şu anda ödünç aldığı kitapları filtrele
-        if (loanRes.ok) {
-            const loans = await loanRes.json();
-            const activeBookIds = loans
-                .filter(l => l.returnDate === null && l.book)
-                .map(l => l.book.id);
-
-            books = books.filter(b => !activeBookIds.includes(b.id));
-        }
-
-        const section = document.getElementById("recommendationSection");
-        const grid = document.getElementById("recommendationGrid");
-
-        if (books && books.length > 0) {
-            if (section) section.style.display = "block";
-            if (grid) {
-                grid.innerHTML = "";
-                grid.style.display = "block";
-                grid.className = "";
-
-                // Öneriler için bir raf konteyneri oluştur
-                const shelfContainer = document.createElement("div");
-                shelfContainer.className = "shelf-container";
-                shelfContainer.style.background = "#3e2723";
-                shelfContainer.style.padding = "20px";
-                shelfContainer.style.borderRadius = "12px";
-
-                const shelfRow = document.createElement("div");
-                shelfRow.className = "shelf-row";
-                shelfRow.style.height = "250px";
-                shelfRow.style.justifyContent = "center";
-                shelfRow.style.padding = "0 40px";
-                shelfRow.style.gap = "20px";
-
-                books.forEach((book, index) => {
-                    const colorIndex = (book.id % 7) + 1;
-                    const colorClass = `bg-cover-${colorIndex}`;
-
-                    const bookFront = document.createElement("div");
-                    bookFront.className = `book-front ${colorClass}`;
-
-                    bookFront.innerHTML = `
-                        <div class="rec-badge">ÖNERİ</div>
-                        <div class="book-cover-frame">
-                            <div class="rec-author">${book.author ? book.author.name : 'Unknown'}</div>
-                            <div class="rec-divider"></div>
-                            <div class="rec-title">${book.title}</div>
-                            <div class="rec-category">~ ${book.category ? book.category.name : 'Genel'} ~</div>
-                        </div>
-                    `;
-
-                    bookFront.onclick = () => {
-                        openBookModal(book);
-                    };
-
-                    shelfRow.appendChild(bookFront);
-                });
-
-                shelfContainer.appendChild(shelfRow);
-                grid.appendChild(shelfContainer);
-            }
-        } else {
-            if (section) section.style.display = "none";
-        }
+        return await recRes.json();
     } catch (e) {
-        console.error("Öneriler yüklenemedi:", e);
-        const sec = document.getElementById("recommendationSection");
-        if (sec) sec.style.display = "none";
+        console.error("Öneriler çekilemedi:", e);
+        return [];
     }
 }
 
+function renderRecommendations(books) {
+    const section = document.getElementById("recommendationSection");
+    const grid = document.getElementById("recommendationGrid");
+
+    if (books && books.length > 0) {
+        if (section) section.style.display = "block";
+        if (grid) {
+            grid.innerHTML = "";
+            grid.style.display = "block";
+            grid.className = "";
+
+            // Öneriler için bir raf konteyneri oluştur
+            const shelfContainer = document.createElement("div");
+            shelfContainer.className = "shelf-container";
+            shelfContainer.style.background = "#3e2723";
+            shelfContainer.style.padding = "20px";
+            shelfContainer.style.borderRadius = "12px";
+
+            const shelfRow = document.createElement("div");
+            shelfRow.className = "shelf-row";
+            shelfRow.style.height = "250px";
+            shelfRow.style.justifyContent = "center";
+            shelfRow.style.padding = "0 40px";
+            shelfRow.style.gap = "20px";
+
+            books.forEach((book, index) => {
+                const colorIndex = (book.id % 7) + 1;
+                const colorClass = `bg-cover-${colorIndex}`;
+
+                const bookFront = document.createElement("div");
+                bookFront.className = `book-front ${colorClass}`;
+
+                bookFront.innerHTML = `
+                    <div class="rec-badge">ÖNERİ</div>
+                    <div class="book-cover-frame">
+                        <div class="rec-author">${book.author ? book.author.name : 'Unknown'}</div>
+                        <div class="rec-divider"></div>
+                        <div class="rec-title">${book.title}</div>
+                        <div class="rec-category">~ ${book.category ? book.category.name : 'Genel'} ~</div>
+                    </div>
+                `;
+
+                bookFront.onclick = () => {
+                    openBookModal(book);
+                };
+
+                shelfRow.appendChild(bookFront);
+            });
+
+            shelfContainer.appendChild(shelfRow);
+            grid.appendChild(shelfContainer);
+        }
+    } else {
+        if (section) section.style.display = "none";
+    }
+}
+
+// Kept for backward compatibility if needed, but unused in initDashboard now
+async function loadRecommendations() {
+    const recs = await fetchRecommendations();
+    renderRecommendations(recs);
+}
+
 // --- ALL BOOKS ---
-// --- ALL BOOKS ---
+async function fetchBooks(page, size) {
+    try {
+        // Use optimized endpoint
+        const res = await fetch(`${API_BASE}/books/list?page=${page}&size=${size}`);
+        if (!res.ok) throw new Error("Fetch error");
+        return await res.json();
+    } catch (e) {
+        console.error("Kitap fetch hatası:", e);
+        return [];
+    }
+}
+
+function handleBooksData(data, reset = false) {
+    let newBooks = [];
+    if (data.content) {
+        newBooks = data.content;
+        hasMore = !data.last;
+        currentPage++;
+    } else if (Array.isArray(data)) {
+        newBooks = data;
+        hasMore = false;
+    }
+
+    if (reset) {
+        allBooks = newBooks;
+    } else {
+        allBooks = [...allBooks, ...newBooks];
+    }
+
+    filterBooks(); // Render
+    updateLoadMoreButton();
+}
+
+async function loadMoreBooks() {
+    if (isLoading || !hasMore) return;
+    isLoading = true;
+    try {
+        const data = await fetchBooks(currentPage, pageSize);
+        handleBooksData(data, false);
+    } finally {
+        isLoading = false;
+    }
+}
+
 async function loadAllBooks(reset = true) {
     if (isLoading) return;
 
@@ -206,32 +246,8 @@ async function loadAllBooks(reset = true) {
 
     isLoading = true;
     try {
-        const res = await fetch(`${API_BASE}/books?page=${currentPage}&size=${pageSize}`);
-        const data = await res.json();
-
-        // Backend Page<Book> dönerse data.content, yoksa data (List)
-        let newBooks = [];
-        if (data.content) {
-            newBooks = data.content;
-            hasMore = !data.last;
-            currentPage++;
-        } else if (Array.isArray(data)) {
-            newBooks = data;
-            hasMore = false;
-        }
-
-        if (reset) {
-            allBooks = newBooks;
-        } else {
-            allBooks = [...allBooks, ...newBooks];
-        }
-
-        filterBooks(); // Mevcut filtreleri koruyarak render et
-        updateLoadMoreButton();
-
-    } catch (e) {
-        console.error("Kitaplar yüklenemedi", e);
-        isLoading = false;
+        const data = await fetchBooks(currentPage, pageSize);
+        handleBooksData(data, reset);
     } finally {
         isLoading = false;
     }
@@ -276,8 +292,6 @@ function updateLoadMoreButton() {
     if (hasMore) {
         btn.style.display = "block";
         btn.innerHTML = isLoading ? "Yükleniyor..." : "Daha Fazla Yükle";
-        // Infinite scroll olduğu için butonu gizleyebiliriz veya loading göstergesi yapabiliriz.
-        // Kullanıcı manuel de basabilsin diye bırakıyoruz ama stilini sadeleştirebiliriz.
     } else {
         btn.style.display = "none";
     }
@@ -348,7 +362,9 @@ function renderBooks(books) {
         spine.style.width = `${dynamicWidth}px`;
         spine.style.minWidth = `${dynamicWidth}px`;
 
-        spine.title = `${book.title} - ${book.author.name} (${isAvailable ? 'Müsait' : 'Ödünçte'})`;
+        // Use DTO fields: authorName, available (already used)
+        const displayAuthor = book.authorName || (book.author ? book.author.name : "-");
+        spine.title = `${book.title} - ${displayAuthor} (${isAvailable ? 'Müsait' : 'Ödünçte'})`;
         spine.onclick = () => {
             openBookModal(book);
         };
@@ -402,16 +418,17 @@ function filterBooks() {
     const query = document.getElementById("searchInput").value.toLowerCase();
 
     if (catVal !== 'all') {
-        filtered = filtered.filter(book => book.category && book.category.id == catVal);
+        filtered = filtered.filter(book => (book.categoryId == catVal) || (book.category && book.category.id == catVal));
     }
 
     if (authVal !== 'all') {
-        filtered = filtered.filter(book => book.author && book.author.id == authVal);
+        filtered = filtered.filter(book => (book.authorId == authVal) || (book.author && book.author.id == authVal));
     }
 
     if (query) {
         filtered = filtered.filter(book =>
             (book.title && book.title.toLowerCase().includes(query)) ||
+            (book.authorName && book.authorName.toLowerCase().includes(query)) ||
             (book.author && book.author.name.toLowerCase().includes(query)) ||
             (book.isbn && book.isbn.includes(query))
         );
@@ -422,11 +439,13 @@ function filterBooks() {
 // --- MY LOANS / HISTORY ---
 async function initMyBooks() {
     await checkUserAuth();
+    updateSidebarPenalty();
     loadMyLoans(true); // Active loans
 }
 
 async function initHistory() {
     await checkUserAuth();
+    updateSidebarPenalty();
     loadMyLoans(false); // History
     loadCategories();
     loadAuthors();
@@ -465,9 +484,8 @@ function renderActiveLoans(loans) {
     const genreCounts = {};
 
     activeLoans.forEach(loan => {
-        const book = loan.book;
-        if (book && book.category) {
-            const catName = book.category.name;
+        if (loan.categoryName) {
+            const catName = loan.categoryName;
             genreCounts[catName] = (genreCounts[catName] || 0) + 1;
         }
 
@@ -478,8 +496,8 @@ function renderActiveLoans(loans) {
     });
 
     const uniqueReadBooks = new Set(
-        loans.filter(l => l.returnDate !== null && l.book)
-            .map(l => l.book.id)
+        loans.filter(l => l.returnDate !== null && l.bookId)
+            .map(l => l.bookId)
     );
     const totalReadCount = uniqueReadBooks.size;
 
@@ -488,9 +506,8 @@ function renderActiveLoans(loans) {
 
     const allGenreCounts = {};
     loans.forEach(loan => {
-        const book = loan.book;
-        if (book && book.category) {
-            const catName = book.category.name;
+        if (loan.categoryName) {
+            const catName = loan.categoryName;
             allGenreCounts[catName] = (allGenreCounts[catName] || 0) + 1;
         }
     });
@@ -533,8 +550,7 @@ function renderActiveLoans(loans) {
 
     let count = 0;
     activeLoans.forEach(loan => {
-        const book = loan.book;
-        if (book) {
+        if (loan.bookTitle) {
             if (count > 0 && count % 19 === 0) {
                 currentRow = document.createElement("div");
                 currentRow.className = "shelf-row";
@@ -542,8 +558,8 @@ function renderActiveLoans(loans) {
             }
             count++;
 
-            const spineData = getRandomSpineData(book.id);
-            const titleLen = book.title.length;
+            const spineData = getRandomSpineData(loan.bookId);
+            const titleLen = loan.bookTitle.length;
             let dynamicWidth = 35 + (titleLen * 0.8);
             if (dynamicWidth > 65) dynamicWidth = 65;
             if (dynamicWidth < 35) dynamicWidth = 35;
@@ -552,11 +568,18 @@ function renderActiveLoans(loans) {
             spine.className = `book-spine ${spineData.colorClass} ${spineData.sizeClass}`;
             spine.style.width = `${dynamicWidth}px`;
             spine.style.minWidth = `${dynamicWidth}px`;
-            spine.title = `${book.title}`;
-            spine.innerText = book.title;
+            spine.title = `${loan.bookTitle}`;
+            spine.innerText = loan.bookTitle;
+
+            const mockBook = {
+                id: loan.bookId,
+                title: loan.bookTitle,
+                author: { name: loan.authorName },
+                category: { name: loan.categoryName }
+            };
 
             spine.onclick = () => {
-                openBookModal(book, loan);
+                openBookModal(mockBook, loan);
             };
 
             currentRow.appendChild(spine);
@@ -578,9 +601,9 @@ function renderHistory(loanList) {
     }
 
     loanList.forEach((loan, index) => {
-        const bookTitle = loan.book ? loan.book.title : "Bilinmeyen Kitap";
-        const authorName = loan.book && loan.book.author ? loan.book.author.name : "-";
-        const catName = loan.book && loan.book.category ? loan.book.category.name : "-";
+        const bookTitle = loan.bookTitle || "Bilinmeyen Kitap";
+        const authorName = loan.authorName || "-";
+        const catName = loan.categoryName || "-";
 
         const loanDate = loan.loanDate ? new Date(loan.loanDate).toLocaleDateString('tr-TR') : "-";
         const returnDate = loan.returnDate ? new Date(loan.returnDate).toLocaleDateString('tr-TR') : "-";
@@ -612,20 +635,16 @@ function filterHistory() {
     const query = document.getElementById("historySearchInput").value.toLowerCase();
 
     if (catVal !== 'all') {
-        filtered = filtered.filter(l => l.book && l.book.category && l.book.category.id == catVal);
+        filtered = filtered.filter(l => l.categoryName && l.categoryName === catVal);
     }
 
     if (authVal !== 'all') {
-        filtered = filtered.filter(l => l.book && l.book.author && l.book.author.id == authVal);
     }
 
     if (query) {
         filtered = filtered.filter(l => {
-            const b = l.book;
-            if (!b) return false;
-            return (b.title && b.title.toLowerCase().includes(query)) ||
-                (b.author && b.author.name.toLowerCase().includes(query)) ||
-                (b.isbn && b.isbn.includes(query));
+            return (l.bookTitle && l.bookTitle.toLowerCase().includes(query)) ||
+                (l.authorName && l.authorName.toLowerCase().includes(query));
         });
     }
 
@@ -635,6 +654,7 @@ function filterHistory() {
 // --- SETTINGS ---
 function initSettings() {
     checkUserAuth();
+    updateSidebarPenalty();
     loadProfile();
 }
 
@@ -757,8 +777,11 @@ function openBookModal(book, loan = null) {
     currentBookIdForModal = book.id;
 
     document.getElementById("modalTitle").innerText = book.title;
-    document.getElementById("modalAuthor").innerText = book.author ? book.author.name : "Bilinmeyen Yazar";
-    document.getElementById("modalCategory").innerText = book.category ? `~ ${book.category.name} ~` : "~ Genel ~";
+    const authorName = book.authorName || (book.author ? book.author.name : "Bilinmeyen Yazar");
+    const categoryName = book.categoryName || (book.category ? book.category.name : "Genel");
+
+    document.getElementById("modalAuthor").innerText = authorName;
+    document.getElementById("modalCategory").innerText = `~ ${categoryName} ~`;
     document.getElementById("modalIsbn").innerText = book.isbn ? `ISBN: ${book.isbn}` : "";
 
     const statusEl = document.getElementById("modalLoanStatus");

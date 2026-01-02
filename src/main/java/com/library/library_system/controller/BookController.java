@@ -38,6 +38,15 @@ public class BookController {
         return bookService.getAllBooks(pageable);
     }
 
+    // Optimized for User Dashboard
+    @GetMapping("/list")
+    public Page<com.library.library_system.dto.BookDTO> getAllBooksDTO(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "19") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookService.getAllBooksDTO(pageable);
+    }
+
     // POST İsteği: Yeni kitap ekle
     @PostMapping
     public Book addBook(@RequestBody com.library.library_system.dto.BookRequest request) {
