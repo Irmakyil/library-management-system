@@ -9,8 +9,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+// ÖNEMLİ: Daha önce oluşturduğumuz DTO'yu import ediyoruz
+import com.library.library_system.dto.LoanRequest; 
 import com.library.library_system.model.Loan;
 import com.library.library_system.service.LoanService;
 
@@ -30,7 +33,6 @@ public class LoanController {
     }
 
     // --- ÜYEYE GÖRE LİSTELEME ---
-    // Frontend'de 'loadMyLoans' fonksiyonunun çalışması için bu gerekli
     @GetMapping("/member/{memberId}")
     public ResponseEntity<List<Loan>> getLoansByMember(@PathVariable Long memberId) {
         return ResponseEntity.ok(loanService.getLoansByMember(memberId));
@@ -43,14 +45,18 @@ public class LoanController {
     }
 
     @GetMapping("/search")
-    public List<Loan> searchLoans(@org.springframework.web.bind.annotation.RequestParam String query) {
+    public List<Loan> searchLoans(@RequestParam String query) {
         return loanService.searchLoans(query);
     }
 
+    // --- DÜZELTİLEN METOT ---
     @PostMapping("/borrow")
-    public ResponseEntity<?> createLoan(@RequestBody BorrowRequest request) {
+    // RequestBody olarak artık kendi oluşturduğumuz LoanRequest DTO'sunu kullanıyoruz
+    public ResponseEntity<?> createLoan(@RequestBody LoanRequest request) { 
         try {
-            Loan newLoan = loanService.createLoan(request.getBookId(), request.getMemberId());
+            // Service artık tek parametre (Request nesnesi) bekliyor
+            // Çünkü içinde bookId, memberId VE branchId var.
+            Loan newLoan = loanService.createLoan(request); 
             return ResponseEntity.ok(newLoan);
         } catch (RuntimeException e) {
             // Hata olursa (Kitap yoksa, stokta yoksa vb.) 400 Bad Request dön
@@ -68,25 +74,5 @@ public class LoanController {
         }
     }
 
-    // YARDIMCI CLASS (DTO)
-    public static class BorrowRequest {
-        private Long memberId;
-        private Long bookId;
-
-        public Long getMemberId() {
-            return memberId;
-        }
-
-        public void setMemberId(Long memberId) {
-            this.memberId = memberId;
-        }
-
-        public Long getBookId() {
-            return bookId;
-        }
-
-        public void setBookId(Long bookId) {
-            this.bookId = bookId;
-        }
-    }
+    // NOT: Alttaki "BorrowRequest" class'ını sildik çünkü dto paketindeki LoanRequest'i kullanıyoruz.
 }

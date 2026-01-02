@@ -5,8 +5,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+
+import com.library.library_system.dto.LoanRequest;
 import com.library.library_system.model.Book;
+import com.library.library_system.model.Branch;
 import com.library.library_system.model.Inventory;
 import com.library.library_system.model.Loan;
 import com.library.library_system.model.Member;
@@ -14,6 +18,7 @@ import com.library.library_system.repository.BookRepository;
 import com.library.library_system.repository.InventoryRepository;
 import com.library.library_system.repository.LoanRepository;
 import com.library.library_system.repository.MemberRepository;
+import com.library.library_system.repository.BranchRepository;
 
 @Service
 public class LoanService {
@@ -22,14 +27,17 @@ public class LoanService {
     private final BookRepository bookRepository;
     private final MemberRepository memberRepository;
     private final InventoryRepository inventoryRepository;
+    private final BranchRepository branchRepository;
 
     public LoanService(LoanRepository loanRepository, BookRepository bookRepository,
             MemberRepository memberRepository,
-            InventoryRepository inventoryRepository){
+            InventoryRepository inventoryRepository,
+            BranchRepository branchRepository){
         this.loanRepository = loanRepository;
         this.bookRepository = bookRepository;
         this.memberRepository = memberRepository;
         this.inventoryRepository = inventoryRepository;
+        this.branchRepository = branchRepository;
     }
 
     public List<Loan> getAllLoans() {
@@ -46,7 +54,47 @@ public class LoanService {
         return loanRepository.findByMemberIdAndReturnDateIsNull(memberId);
     }
 
-    // --- ÖDÜNÇ ALMA İŞLEMİ ---
+
+    @Transactional // İşlem sırasında hata olursa stok düşmesini geri almak için
+    public Loan createLoan(LoanRequest request) {
+        // 1. Üye ve Kitap Kontrolü
+        Member member = memberRepository.findById(request.getMemberId())
+                .orElseThrow(() -> new RuntimeException("Üye bulunamadı"));
+
+        Book book = bookRepository.findById(request.getBookId())
+                .orElseThrow(() -> new RuntimeException("Kitap bulunamadı"));
+
+        // 2. Şube Kontrolü (YENİ)
+        if (request.getBranchId() == null) {
+            throw new RuntimeException("Lütfen bir şube seçiniz!");
+        }
+        Branch branch = branchRepository.findById(request.getBranchId())
+                .orElseThrow(() -> new RuntimeException("Şube bulunamadı"));
+
+        // 3. Stok Kontrolü ve Düşürme (YENİ)
+        Inventory inventory = inventoryRepository.findByBookIdAndBranchId(book.getId(), branch.getId());
+        
+        if (inventory == null || inventory.getStockQuantity() <= 0) {
+            throw new RuntimeException("Seçilen şubede bu kitap tükenmiş!");
+        }
+
+        // Stoğu 1 azalt
+        inventory.setStockQuantity(inventory.getStockQuantity() - 1);
+        inventoryRepository.save(inventory);
+
+        // Kitabın genel "Müsait" durumu güncellenmeli mi? 
+        // (Eğer tüm şubelerde biterse false yapabilirsin ama şimdilik gerek yok)
+
+        // 4. Ödünç Kaydını Oluştur
+        Loan loan = new Loan();
+        loan.setBook(book);
+        loan.setMember(member);
+        loan.setBranch(branch); // <--- Şubeyi kaydet
+        loan.setLoanDate(LocalDate.now());
+        
+        return loanRepository.save(loan);
+    }
+/*     // --- ÖDÜNÇ ALMA İŞLEMİ ---
     public Loan createLoan(Long bookId, Long memberId) {
         // Kitabı bul
         Book book = bookRepository.findById(bookId)
@@ -79,7 +127,7 @@ public class LoanService {
         }
 
         return loanRepository.save(loan);
-    }
+    } */
 
     // --- İADE ETME İŞLEMİ ---
     public Loan returnLoan(Long loanId) {

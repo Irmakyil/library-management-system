@@ -691,15 +691,22 @@ async function updatePassword() {
 }
 
 // --- BORROW / RETURN LOGIC ---
-async function borrowBook(bookId) {
+async function borrowBook(bookId, branchId) {
     if (!currentUser) return;
+
+    if (!branchId) {
+        alert("Lütfen bir şube seçiniz!");
+        return;
+    }
+
     try {
         const res = await fetch(`${API_BASE}/loans/borrow`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 memberId: currentUser.id,
-                bookId: bookId
+                bookId: bookId,
+                branchId: parseInt(branchId)
             })
         });
 
@@ -753,7 +760,7 @@ async function returnBook(loanId) {
 // --- MODAL ---
 let currentBookIdForModal = null;
 
-function openBookModal(book, loan = null) {
+async function openBookModal(book, loan = null) {
     currentBookIdForModal = book.id;
 
     document.getElementById("modalTitle").innerText = book.title;
@@ -772,6 +779,8 @@ function openBookModal(book, loan = null) {
         modalContent.style.borderColor = colorHex;
     }
 
+    const branchDiv = document.getElementById("branchSelectionDiv");
+    const branchSelect = document.getElementById("modalBranchSelect");
     const borrowBtn = document.getElementById("modalBorrowBtn");
     borrowBtn.onclick = null;
 
@@ -782,6 +791,8 @@ function openBookModal(book, loan = null) {
         borrowBtn.style.color = "#3e1212";
         borrowBtn.style.opacity = "1";
         borrowBtn.style.cursor = "pointer";
+
+        branchDiv.style.display = "none"; // İade ederken şube seçmeye gerek yok (veya alındığı yere verilebilir)
 
         const loanDate = new Date(loan.loanDate);
         const dueDate = new Date(loanDate);
@@ -803,6 +814,44 @@ function openBookModal(book, loan = null) {
 
     } else if (book.available) {
         // BORROW MODE
+
+        // Şubeleri Yükle
+            branchDiv.style.display = "block";
+            branchSelect.innerHTML = "<option>Şubeler Yükleniyor...</option>";
+            borrowBtn.disabled = true; // Yüklenene kadar basamasın
+
+            try {
+                // Backend'den bu kitabın olduğu şubeleri çek
+                const res = await fetch(`${API_BASE}/branches/book/${book.id}`);
+                const branches = await res.json();
+
+                branchSelect.innerHTML = "";
+                
+                if (branches.length === 0) {
+                    branchSelect.innerHTML = "<option>Stokta Yok!</option>";
+                    borrowBtn.innerHTML = "TÜKENDİ";
+                    borrowBtn.disabled = true;
+                } else {
+                    branches.forEach(br => {
+                        const opt = document.createElement("option");
+                        opt.value = br.id;
+                        opt.text = `${br.name}`; // Yanına stok adedi de eklenebilir ama şu an Inventory DTO lazım
+                        branchSelect.appendChild(opt);
+                    });
+                    
+                    borrowBtn.innerHTML = "ÖDÜNÇ AL";
+                    borrowBtn.disabled = false;
+                    borrowBtn.onclick = () => {
+                        const selectedBranchId = branchSelect.value;
+                        borrowBook(currentBookIdForModal, selectedBranchId); // ID'yi gönderiyoruz
+                        closeBookModal();
+                    };
+                }
+            } catch (e) {
+                console.error("Şube yükleme hatası", e);
+                branchSelect.innerHTML = "<option>Hata oluştu</option>";
+            }
+
         borrowBtn.innerHTML = "ÖDÜNÇ AL";
         borrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
         borrowBtn.style.color = "#3e1212";
@@ -815,6 +864,9 @@ function openBookModal(book, loan = null) {
 
     } else {
         // UNAVAILABLE MODE
+
+        branchDiv.style.display = "none";
+
         borrowBtn.innerHTML = "ŞU AN ÖDÜNÇTE";
         borrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
         borrowBtn.style.color = "#3e1212";

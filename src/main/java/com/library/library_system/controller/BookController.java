@@ -1,25 +1,18 @@
 package com.library.library_system.controller;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import com.library.library_system.dto.BookRequest;
 import com.library.library_system.model.Book;
 import com.library.library_system.repository.BookRepository;
+import com.library.library_system.service.BookService;
 
 @RestController
 @RequestMapping("/api/books")
@@ -28,25 +21,29 @@ public class BookController {
     @Autowired
     private BookRepository bookRepository;
 
+    @Autowired
+    private BookService bookService;
+
+    // --- DÜZELTME 1: Return tipi List<Book> değil Page<Book> oldu ---
     @GetMapping
-    public ResponseEntity<List<Book>> getAllBooks(
+    public ResponseEntity<Page<Book>> getAllBooks(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "19") int size) { // JS'de pageSize 19 ayarlı
+        
+        // getContent() metodunu kaldırdık. Direkt Page nesnesini dönüyoruz.
         Page<Book> bookPage = bookRepository.findAll(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")));
-        return ResponseEntity.ok(bookPage.getContent());
+        return ResponseEntity.ok(bookPage);
     }
 
-    // --- DÜZELTİLEN KISIM (500 HATASINI ÇÖZER) ---
     @GetMapping("/search")
     public ResponseEntity<Page<Book>> searchBooks(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long authorId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "19") int size) {
 
         String searchQuery = null;
-        // Eğer arama kelimesi doluysa, başına ve sonuna % ekle (SQL LIKE formatı)
         if (query != null && !query.trim().isEmpty()) {
             searchQuery = "%" + query.trim() + "%";
         }
@@ -61,30 +58,26 @@ public class BookController {
         return ResponseEntity.ok(books);
     }
 
-    // Diğer metodlar aynı kalıyor (Kısalık için tekrar yazmadım, mevcut halini koru)
     @GetMapping("/{id}")
     public ResponseEntity<Book> getBookById(@PathVariable Long id) {
         return bookRepository.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
+    // --- DÜZELTME 2: Add işlemi Service katmanına bağlandı ---
+    // (Böylece kitap eklerken Branch ve Inventory mantığı çalışacak)
     @PostMapping
-    public Book addBook(@RequestBody Book book) {
-        return bookRepository.save(book);
+    public ResponseEntity<Book> addBook(@RequestBody BookRequest bookRequest) {
+        // Repository.save yerine bookService.addBook kullanıyoruz
+        Book newBook = bookService.addBook(bookRequest);
+        return ResponseEntity.ok(newBook);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody Book bookDetails) {
-        Optional<Book> optionalBook = bookRepository.findById(id);
-        if (optionalBook.isPresent()) {
-            Book book = optionalBook.get();
-            book.setTitle(bookDetails.getTitle());
-            book.setAuthor(bookDetails.getAuthor());
-            book.setCategory(bookDetails.getCategory());
-            book.setIsbn(bookDetails.getIsbn());
-            book.setPublicationYear(bookDetails.getPublicationYear());
-            book.setInventory(bookDetails.getInventory());
-            return ResponseEntity.ok(bookRepository.save(book));
-        } else {
+    public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody BookRequest bookRequest) {
+        try {
+            Book updatedBook = bookService.updateBook(id, bookRequest);
+            return ResponseEntity.ok(updatedBook);
+        } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
@@ -101,6 +94,7 @@ public class BookController {
     
     @GetMapping("/recommendations/{userId}")
     public ResponseEntity<List<Book>> getRecommendations(@PathVariable Long userId) {
+        // Tavsiyelerde sayfalama genelde olmaz, liste dönebilir
         return ResponseEntity.ok(bookRepository.findRandomBooks());
     }
 }

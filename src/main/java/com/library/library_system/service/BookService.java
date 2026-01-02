@@ -8,11 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.library.library_system.model.Book;
+import com.library.library_system.model.Branch;
 import com.library.library_system.model.Inventory;
 import com.library.library_system.repository.AuthorRepository;
 import com.library.library_system.repository.BookRepository;
+import com.library.library_system.repository.BranchRepository;
 import com.library.library_system.repository.CategoryRepository;
 import com.library.library_system.repository.InventoryRepository;
+
 
 @Service
 @Transactional
@@ -22,16 +25,19 @@ public class BookService {
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
     private final InventoryRepository inventoryRepository;
+    private final BranchRepository branchRepository;
 
     // Constructor Dependency Injection
     public BookService(BookRepository bookRepository,
                        AuthorRepository authorRepository,
                        CategoryRepository categoryRepository,
-                       InventoryRepository inventoryRepository) {
+                       InventoryRepository inventoryRepository,
+                       BranchRepository branchRepository) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.categoryRepository = categoryRepository;
         this.inventoryRepository = inventoryRepository;
+        this.branchRepository = branchRepository;
     }
 
     // Tüm kitapları getir
@@ -42,20 +48,33 @@ public class BookService {
     // Sayfalı getir
     public Page<Book> getAllBooks(Pageable pageable) {
         return bookRepository.findAll(pageable);
-    }
+    } 
 
     // Yeni kitap ekle
     public Book addBook(com.library.library_system.dto.BookRequest request) {
         Book book = new Book();
         updateBookFromRequest(book, request);
+        
+        // Varsayılan olarak erişilebilir başlasın
+        book.setAvailable(request.getStock() > 0);
 
-        // Önce kitabı kaydet
+        // 1. Önce kitabı kaydet (ID oluşması için)
         Book savedBook = bookRepository.save(book);
 
-        // Sonra stoğu (Inventory) kaydet
-        Inventory inventory = new Inventory();
-        inventory.setBook(savedBook);
-        inventory.setStockQuantity(request.getStock() > 0 ? request.getStock() : 1); // Hiç girilmezse 1 olsun
+        // 2. Şube Bilgisini Al (Eğer request'te yoksa varsayılan 1. şubeyi seç)
+        Long branchId = request.getBranchId();
+        if (branchId == null) {
+            branchId = 1L; // Varsayılan Şube ID (Merkez)
+        }
+
+        Branch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new RuntimeException("Şube bulunamadı. ID: " + request.getBranchId()));
+
+        // 3. Envanter (Stok) Kaydını Oluştur (Kitap + Şube + Stok)
+        // Inventory.java'daki 3 parametreli constructor'ı kullanıyoruz
+        int stock = request.getStock() > 0 ? request.getStock() : 1; // En az 1 tane olsun
+        Inventory inventory = new Inventory(savedBook, branch, stock);
+        
         inventoryRepository.save(inventory);
 
         return savedBook;
@@ -79,28 +98,40 @@ public class BookService {
         return bookRepository.findByTitleContainingIgnoreCaseOrAuthor_NameContainingIgnoreCase(query, query);
     }
 
-    // --- GÜNCELLENEN METOT: updateBook ---
     public Book updateBook(Long id, com.library.library_system.dto.BookRequest request) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Kitap bulunamadı"));
-        
-        // Kitap bilgilerini güncelle
+
+        // Kitap bilgilerini (Ad, Yazar vb.) güncelle
         updateBookFromRequest(book, request);
 
-        // STOK GÜNCELLEME KISMI 
-        Inventory inventory = book.getInventory();
+        // --- STOK GÜNCELLEME KISMI ---
+
+        // 1. Stoğun hangi şubeye ait olduğunu bul
+        // Request'ten gelmezse varsayılan olarak 1 (Merkez) kabul et
+        Long branchId = request.getBranchId();
+        if (branchId == null) {
+            branchId = 1L; 
+        }
+
+        Branch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new RuntimeException("Şube bulunamadı"));
+
+        // 2. Bu kitabın O ŞUBEDEKİ kaydını bul
+        Inventory inventory = inventoryRepository.findByBookIdAndBranchId(book.getId(), branch.getId());
+
         if (inventory == null) {
-            // Eğer daha önce stoğu hiç yoksa (eski veri) yeni oluştur
-            inventory = new Inventory(book, request.getStock());
+            // Eğer bu şubede bu kitap daha önce hiç yoksa YENİ OLUŞTUR
+            inventory = new Inventory(book, branch, request.getStock());
         } else {
-            // Varsa güncelle
+            // Varsa sadece sayıyı güncelle
             inventory.setStockQuantity(request.getStock());
         }
-        inventoryRepository.save(inventory); 
 
+        inventoryRepository.save(inventory);
 
-        // Stok durumuna göre 'available' (müsaitlik) bilgisini güncelle
-        // Stok > 0 ise true, değilse false
+        // 3. Kitabın genel müsaitlik durumunu güncelle
+        // (Basit mantık: Eklenen stok 0'dan büyükse kitap var demektir)
         book.setAvailable(request.getStock() > 0);
 
         return bookRepository.save(book);
