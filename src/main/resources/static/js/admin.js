@@ -327,12 +327,12 @@ function renderBooks(books) {
 
         const btnEdit = document.createElement("button");
         btnEdit.textContent = "Düzenle";
-        btnEdit.style.cssText = "background-color: #5d4037; color: white; border: 1px solid #4e342e; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 0.85rem;";
+        btnEdit.style.cssText = "background-color: #143800; color: white; border: 1px solid #143800; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 0.85rem;";
         btnEdit.onclick = () => editBook(b);
 
         const btnDelete = document.createElement("button");
         btnDelete.textContent = "Sil";
-        btnDelete.style.cssText = "background-color: #8a1c1c; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;";
+        btnDelete.style.cssText = "background-color: #8a1c1c; color: white; border: 1px solid #8a1c1c; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;";
         btnDelete.onclick = () => deleteBook(b.id);
 
         tdActions.appendChild(btnEdit);
