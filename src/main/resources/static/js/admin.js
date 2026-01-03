@@ -120,7 +120,7 @@ function renderDashboardWidgets(allLoans, overdueLoans) {
                         <div style="font-size: 0.85rem; color: #6b7280;">${actionText}: ${bookTitle}</div>
                     </td>
                     <td style="padding: 12px 5px; text-align: right; color: #9ca3af; font-size: 0.85rem;">
-                        ${l.returnDate || l.loanDate}
+                        ${formatDateTime(l.returnDate || l.loanDate)}
                     </td>
                 </tr>
             `;
@@ -437,6 +437,22 @@ async function deleteBook(id) {
 }
 
 // --- LOANS PAGE FUNCTIONS ---
+function formatDateTime(dateData) {
+    if (!dateData) return '-';
+    try {
+        const date = new Date(dateData);
+        if (isNaN(date.getTime())) return '-';
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${day}.${month}.${year} ${hours}:${minutes}`;
+    } catch (e) {
+        return '-';
+    }
+}
+
 async function loadLoans() {
     checkAdminAuth();
     const res = await fetch(`${API}/loans`);
@@ -494,8 +510,8 @@ function renderLoans(loans) {
             <tr>
                 <td>${l.memberName || '-'}</td>
                 <td>${l.bookTitle || '-'}</td>
-                <td>${l.loanDate}</td>
-                <td>${l.returnDate || '-'}</td>
+                <td>${formatDateTime(l.loanDate)}</td>
+                <td>${formatDateTime(l.returnDate)}</td>
                 <td>${statusHtml}</td>
             </tr>
         `;

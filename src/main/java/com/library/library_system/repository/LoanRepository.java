@@ -12,11 +12,11 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
         // Belirli bir üyeye ait tüm ödünç kayıtlarını getirir
         List<Loan> findByMemberId(Long memberId);
 
-        @org.springframework.data.jpa.repository.Query("SELECT new com.library.library_system.dto.LoanDTO(l.id, b.id, b.category.id, b.title, concat(m.firstName, ' ', m.lastName), concat(b.author.name, ''), concat(b.category.name, ''), l.loanDate, l.returnDate, l.penalty) FROM Loan l JOIN l.book b JOIN l.member m LEFT JOIN b.author LEFT JOIN b.category WHERE l.member.id = :memberId ORDER BY CASE WHEN l.returnDate IS NOT NULL THEN l.returnDate ELSE l.loanDate END DESC, l.id DESC")
+        @org.springframework.data.jpa.repository.Query("SELECT new com.library.library_system.dto.LoanDTO(l.id, b.id, b.category.id, b.author.id, b.title, concat(m.firstName, ' ', m.lastName), concat(b.author.name, ''), concat(b.category.name, ''), l.loanDate, l.returnDate, l.penalty) FROM Loan l JOIN l.book b JOIN l.member m LEFT JOIN b.author LEFT JOIN b.category WHERE l.member.id = :memberId ORDER BY CASE WHEN l.returnDate IS NOT NULL THEN l.returnDate ELSE l.loanDate END DESC, l.id DESC")
         List<com.library.library_system.dto.LoanDTO> findDTOByMemberId(
                         @org.springframework.data.repository.query.Param("memberId") Long memberId);
 
-        @org.springframework.data.jpa.repository.Query("SELECT new com.library.library_system.dto.LoanDTO(l.id, b.id, b.category.id, b.title, concat(m.firstName, ' ', m.lastName), concat(b.author.name, ''), concat(b.category.name, ''), l.loanDate, l.returnDate, l.penalty) FROM Loan l JOIN l.book b JOIN l.member m LEFT JOIN b.author LEFT JOIN b.category ORDER BY CASE WHEN l.returnDate IS NOT NULL THEN l.returnDate ELSE l.loanDate END DESC, l.id DESC")
+        @org.springframework.data.jpa.repository.Query("SELECT new com.library.library_system.dto.LoanDTO(l.id, b.id, b.category.id, b.author.id, b.title, concat(m.firstName, ' ', m.lastName), concat(b.author.name, ''), concat(b.category.name, ''), l.loanDate, l.returnDate, l.penalty) FROM Loan l JOIN l.book b JOIN l.member m LEFT JOIN b.author LEFT JOIN b.category ORDER BY CASE WHEN l.returnDate IS NOT NULL THEN l.returnDate ELSE l.loanDate END DESC, l.id DESC")
         List<com.library.library_system.dto.LoanDTO> findAllDTOs();
 
         // Belirli bir üyeye ait tüm ödünç kayıtlarını siler

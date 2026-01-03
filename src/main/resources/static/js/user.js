@@ -658,10 +658,11 @@ function filterHistory() {
     const query = document.getElementById("historySearchInput").value.toLowerCase();
 
     if (catVal !== 'all') {
-        filtered = filtered.filter(l => l.categoryName && l.categoryName === catVal);
+        filtered = filtered.filter(l => l.categoryId && l.categoryId == catVal);
     }
 
     if (authVal !== 'all') {
+        filtered = filtered.filter(l => l.authorId && l.authorId == authVal);
     }
 
     if (query) {

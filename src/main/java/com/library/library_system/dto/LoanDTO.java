@@ -6,6 +6,7 @@ public class LoanDTO {
     private Long id;
     private Long bookId;
     private Long categoryId;
+    private Long authorId;
     private String bookTitle;
     private String memberName;
     private String authorName;
@@ -14,12 +15,14 @@ public class LoanDTO {
     private LocalDateTime returnDate;
     private Double penalty;
 
-    public LoanDTO(Long id, Long bookId, Long categoryId, String bookTitle, String memberName, String authorName,
+    public LoanDTO(Long id, Long bookId, Long categoryId, Long authorId, String bookTitle, String memberName,
+            String authorName,
             String categoryName,
             LocalDateTime loanDate, LocalDateTime returnDate, Double penalty) {
         this.id = id;
         this.bookId = bookId;
         this.categoryId = categoryId;
+        this.authorId = authorId;
         this.bookTitle = bookTitle;
         this.memberName = memberName;
         this.authorName = authorName;
@@ -48,6 +51,10 @@ public class LoanDTO {
 
     public Long getCategoryId() {
         return categoryId;
+    }
+
+    public Long getAuthorId() {
+        return authorId;
     }
 
     public String getBookTitle() {
