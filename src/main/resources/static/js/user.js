@@ -735,22 +735,33 @@ async function updatePassword() {
 }
 
 // --- BORROW / RETURN LOGIC ---
-async function borrowBook(bookId) {
+async function borrowBook(bookId, branchId) {
+    // Debug için konsola yazalım
+    console.log("Borrow Fonksiyonu Çalıştı -> Kitap:", bookId, "Şube:", branchId);
+
     if (!currentUser) return;
+    
+    // Şube ID kontrolü
+    if (!branchId || branchId === "Şubeler Yükleniyor..." || branchId === "") {
+        alert("Lütfen bir şube seçiniz! (Değer alınamadı)");
+        return;
+    }
+
     try {
         const res = await fetch(`${API_BASE}/loans/borrow`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 memberId: currentUser.id,
-                bookId: bookId
+                bookId: bookId,
+                branchId: parseInt(branchId) // Sayıya çevirip gönderiyoruz
             })
         });
 
         if (res.ok) {
             alert("Kitap başarıyla ödünç alındı!");
             if (window.location.pathname.includes("dashboard.html")) {
-                loadAllBooks();
+                loadAllBooks(); 
                 loadRecommendations();
                 updateSidebarPenalty();
             }
@@ -795,11 +806,14 @@ async function returnBook(loanId) {
 }
 
 // --- MODAL ---
+// user.js
+
 let currentBookIdForModal = null;
 
-function openBookModal(book, loan = null) {
+async function openBookModal(book, loan = null) {
     currentBookIdForModal = book.id;
 
+    // Modal içeriklerini doldur
     document.getElementById("modalTitle").innerText = book.title;
     const authorName = book.authorName || (book.author ? book.author.name : "Bilinmeyen Yazar");
     const categoryName = book.categoryName || (book.category ? book.category.name : "Genel");
@@ -808,6 +822,7 @@ function openBookModal(book, loan = null) {
     document.getElementById("modalCategory").innerText = `~ ${categoryName} ~`;
     document.getElementById("modalIsbn").innerText = book.isbn ? `ISBN: ${book.isbn}` : "";
 
+    // Renk ve Tasarım Ayarları
     const statusEl = document.getElementById("modalLoanStatus");
     if (statusEl) statusEl.innerText = "";
 
@@ -819,16 +834,25 @@ function openBookModal(book, loan = null) {
         modalContent.style.borderColor = colorHex;
     }
 
+    // HTML Elemanlarını Seç
+    const branchDiv = document.getElementById("branchSelectionDiv");
+    const branchSelect = document.getElementById("modalBranchSelect");
     const borrowBtn = document.getElementById("modalBorrowBtn");
-    borrowBtn.onclick = null;
+
+    // Butonu sıfırla (Eski event listener'ları temizle)
+    // replaceWith klonu, event listener'ları temizlemenin en temiz yoludur
+    const newBorrowBtn = borrowBtn.cloneNode(true);
+    borrowBtn.parentNode.replaceChild(newBorrowBtn, borrowBtn);
 
     if (loan) {
-        // RETURN MODE
-        borrowBtn.innerHTML = "İADE ET";
-        borrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
-        borrowBtn.style.color = "#3e1212";
-        borrowBtn.style.opacity = "1";
-        borrowBtn.style.cursor = "pointer";
+        // --- İADE MODU ---
+        if(branchDiv) branchDiv.style.display = "none";
+        
+        newBorrowBtn.innerHTML = "İADE ET";
+        newBorrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
+        newBorrowBtn.disabled = false;
+        newBorrowBtn.style.cursor = "pointer";
+        newBorrowBtn.onclick = () => returnBook(loan.id);
 
         const loanDate = parseLocalDate(loan.loanDate);
         const dueDate = new Date(loanDate);
@@ -842,15 +866,17 @@ function openBookModal(book, loan = null) {
                 const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
 
                 if (diffHours < 24) {
-                    // Less than 24 hours remaining
-                    statusEl.innerText = `İade İçin Son ${diffHours} Saat!`;
-                    statusEl.style.color = "#ffb74d"; // Warning color
-                } else {
+                // Less than 24 hours remaining
+                statusEl.innerText = `İade İçin Son ${diffHours} Saat!`;
+                statusEl.style.color = "#ffb74d"; // Warning color
+                }
+                else {
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                     statusEl.innerText = `İade İçin ${diffDays} Gün Kaldı`;
                     statusEl.style.color = "#f5efea";
                 }
-            } else {
+            }
+            else {
                 // Overdue
                 const overdueDiff = Math.abs(diffTime);
                 const overdueDays = Math.ceil(overdueDiff / (1000 * 60 * 60 * 24));
@@ -858,30 +884,84 @@ function openBookModal(book, loan = null) {
                 statusEl.style.color = "#ff5252";
             }
         }
-        borrowBtn.onclick = () => returnBook(loan.id);
-
-    } else if (book.available) {
-        // BORROW MODE
-        borrowBtn.innerHTML = "ÖDÜNÇ AL";
-        borrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
-        borrowBtn.style.color = "#3e1212";
-        borrowBtn.style.opacity = "1";
-        borrowBtn.style.cursor = "pointer";
-        borrowBtn.onclick = () => {
-            borrowBook(currentBookIdForModal);
-            closeBookModal();
-        };
-
-    } else {
-        // UNAVAILABLE MODE
-        borrowBtn.innerHTML = "ŞU AN ÖDÜNÇTE";
-        borrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
-        borrowBtn.style.color = "#3e1212";
-        borrowBtn.style.opacity = "0.5";
-        borrowBtn.style.cursor = "not-allowed";
-        borrowBtn.onclick = () => alert("Bu kitap şu an başkasında, ödünç alınamaz.");
     }
 
+    else {
+        // --- ÖDÜNÇ ALMA MODU ---
+        
+        if (book.available) {
+            if(branchDiv) branchDiv.style.display = "block";
+            if(branchSelect) branchSelect.innerHTML = "<option>Şubeler Yükleniyor...</option>";
+            
+            newBorrowBtn.innerHTML = "YÜKLENİYOR...";
+            newBorrowBtn.disabled = true;
+            newBorrowBtn.style.cursor = "wait";
+            newBorrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
+            newBorrowBtn.style.color = "#3e1212";
+            newBorrowBtn.style.opacity = "1";
+
+            try {
+                // Şubeleri Getir
+                const res = await fetch(`${API_BASE}/branches/book/${book.id}`);
+                const branches = await res.json();
+
+                if(branchSelect) branchSelect.innerHTML = "";
+                
+                if (branches.length === 0) {
+                    if(branchSelect) branchSelect.innerHTML = "<option>Stokta Yok!</option>";
+                    newBorrowBtn.innerHTML = "TÜKENDİ";
+                    newBorrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
+                    newBorrowBtn.style.color = "#3e1212";
+                    newBorrowBtn.style.opacity = "0.5";
+                    newBorrowBtn.disabled = true;
+                    newBorrowBtn.style.cursor = "not-allowed";
+                } else {
+                    // Şubeleri dropdown'a doldur
+                    branches.forEach(br => {
+                        const opt = document.createElement("option");
+                        opt.value = br.id;
+                        opt.text = br.name; 
+                        branchSelect.appendChild(opt);
+                    });
+                    
+                    newBorrowBtn.innerHTML = "ÖDÜNÇ AL";
+                    newBorrowBtn.disabled = false;
+                    newBorrowBtn.style.cursor = "pointer";
+
+                    // --- İŞTE DÜZELTİLEN KISIM ---
+                    newBorrowBtn.onclick = function() {
+                        // 1. Tıklama anında seçili değeri al
+                        const selectedVal = document.getElementById("modalBranchSelect").value;
+                        
+                        // 2. Kontrol et
+                        console.log("Tıklanan Kitap:", currentBookIdForModal);
+                        console.log("Seçilen Şube ID:", selectedVal);
+
+                        // 3. borrowBook fonksiyonuna gönder
+                        borrowBook(currentBookIdForModal, selectedVal);
+                        
+                        closeBookModal();
+                    };
+                }
+            } catch (e) {
+                console.error("Şube hatası:", e);
+                newBorrowBtn.innerHTML = "HATA";
+            }
+
+        } else {
+            // Kitap Müsait Değil
+            if(branchDiv) branchDiv.style.display = "none";
+            newBorrowBtn.innerHTML = "BAŞKASINDA";
+            newBorrowBtn.disabled = true;
+            newBorrowBtn.style.background = "linear-gradient(to bottom, #ffd700, #f59e0b)";
+            newBorrowBtn.style.color = "#3e1212";
+            newBorrowBtn.style.opacity = "0.5";
+            newBorrowBtn.style.cursor = "not-allowed";
+            newBorrowBtn.onclick = () => alert("Bu kitap şu an başkasında.");
+        }
+    }
+
+    // Modalı Göster
     document.getElementById("bookDetailModal").classList.remove("hidden");
     document.getElementById("bookDetailModal").style.display = "flex";
 }

@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.library.library_system.model.Book;
-import com.library.library_system.model.Loan;
 import com.library.library_system.repository.BookRepository;
 import com.library.library_system.repository.LoanRepository;
 

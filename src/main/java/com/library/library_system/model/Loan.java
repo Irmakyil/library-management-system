@@ -29,6 +29,10 @@ public class Loan {
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
+    @ManyToOne
+    @JoinColumn(name = "branch_id")
+    private Branch branch; // Kitap hangi şubeden teslim alındı?
+
     private LocalDateTime loanDate; // Veriliş Tarihi
     private LocalDateTime returnDate; // İade Tarihi
 
@@ -62,6 +66,13 @@ public class Loan {
 
     public void setBook(Book book) {
         this.book = book;
+    }
+
+    public Branch getBranch() { 
+        return branch; 
+    }
+    public void setBranch(Branch branch) { 
+        this.branch = branch; 
     }
 
     public LocalDateTime getLoanDate() {

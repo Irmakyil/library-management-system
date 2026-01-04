@@ -21,7 +21,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     Page<BookDTO> findAllDTO(Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = { "author", "category", "inventory" })
+    @EntityGraph(attributePaths = { "author", "category", "inventories" })
     Page<Book> findAll(Pageable pageable);
 
     // "Containing": İçinde geçenleri bul (LIKE %query%)

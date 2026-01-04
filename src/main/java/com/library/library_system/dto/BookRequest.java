@@ -11,6 +11,7 @@ public class BookRequest {
     private int publicationYear;
     private Long categoryId;
     private int stockQuantity; 
+    private Long branchId;
 
     // Getters and Setters
     public String getTitle() {
@@ -59,5 +60,13 @@ public class BookRequest {
 
     public void setStock(int stock) { 
         this.stockQuantity = stock;
+    }
+
+    public Long getBranchId(){
+        return branchId;
+    }
+
+    public void setBranchId(Long branchId){
+        this.branchId = branchId;
     }
 }

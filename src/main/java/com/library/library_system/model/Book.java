@@ -1,8 +1,9 @@
 package com.library.library_system.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -13,7 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -50,9 +51,10 @@ public class Book {
     @JoinColumn(name = "category_id") // Veritabanında 'category_id' adında bir sütun oluşacak
     private Category category;
 
-    @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JsonManagedReference
-    private Inventory inventory;
+    @OneToMany(mappedBy = "book", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
+    @JsonIgnore // Kitap listesini çekerken sonsuz döngüye girmesin ve performans artsın
+    private List<Inventory> inventories;
+
 
     // --- Constructor (Boş) ---
     public Book() {
@@ -94,8 +96,9 @@ public class Book {
     public Category getCategory() { return category; }
     public void setCategory(Category category) { this.category = category; }
 
-    public Inventory getInventory() { return inventory; }
-    public void setInventory(Inventory inventory) { this.inventory = inventory; }
+    public List<Inventory> getInventories() {return inventories;}
+
+    public void setInventories(List<Inventory> inventories) {this.inventories = inventories;}
 
     @PreUpdate
     @PrePersist
