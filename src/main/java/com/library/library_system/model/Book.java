@@ -145,13 +145,22 @@ public class Book {
     // inventory bilgisi döndürme
     public java.util.Map<String, Object> getInventory() {
         int totalStock = 0;
+        java.util.List<String> branches = new java.util.ArrayList<>();
+        java.util.Map<Long, Integer> branchStocks = new java.util.HashMap<>();
+
         if (inventories != null) {
             for (Inventory inv : inventories) {
                 totalStock += inv.getStockQuantity();
+                if (inv.getBranch() != null) {
+                    branches.add(inv.getBranch().getName() + " (" + inv.getStockQuantity() + ")");
+                    branchStocks.put(inv.getBranch().getId(), inv.getStockQuantity());
+                }
             }
         }
         java.util.Map<String, Object> inventoryData = new java.util.HashMap<>();
         inventoryData.put("stockQuantity", totalStock);
+        inventoryData.put("branches", branches);
+        inventoryData.put("branchStocks", branchStocks);
         return inventoryData;
     }
 
