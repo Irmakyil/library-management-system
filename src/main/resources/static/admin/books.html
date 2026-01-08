@@ -6,21 +6,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetim Paneli - Kitaplar</title>
     <link rel="icon" href="../images/kitap.png" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Outfit:wght@300;400;500;600&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Outfit:wght@300;400;500;600&family=Cinzel:wght@500;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css?v=11">
     <style>
-        .hidden { display: none !important; }
-        
+        .hidden {
+            display: none !important;
+        }
+
         /* Tablo Ayarları */
-        .history-table { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0 6px; }
-        .history-table th, .history-table td { 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-            white-space: nowrap; 
+        .history-table {
+            table-layout: fixed;
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 6px;
+        }
+
+        .history-table th,
+        .history-table td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
             padding: 12px 10px;
             vertical-align: middle;
         }
-        .history-table th { color: #5d4037; } /* Başlık rengi */
+
+        .history-table th {
+            color: #5d4037;
+        }
+
+        /* Başlık rengi */
     </style>
 </head>
 
@@ -31,10 +47,12 @@
         <aside class="sidebar">
             <div class="logo-area">
                 <img src="../images/kitap.png" alt="Logo" style="width: 40px; height: 40px; object-fit: contain;">
-                <h2 style="margin:0; font-family: 'Playfair Display', serif; color: #fff; font-size: 1.5rem;">Kütüphane</h2>
+                <h2 style="margin:0; font-family: 'Playfair Display', serif; color: #fff; font-size: 1.5rem;">Kütüphane
+                </h2>
             </div>
 
-            <div style="margin-bottom: 10px; padding-left: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+            <div
+                style="margin-bottom: 10px; padding-left: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
                 <p style="margin: 0; margin-bottom: 5px; font-size: 0.9rem; color: #9ca3af;">Yönetim Paneli</p>
                 <p id="sidebarAdminName" style="margin: 0; font-weight: bold; color: #fff;">Admin</p>
             </div>
@@ -49,45 +67,54 @@
             <div class="bottom-menu">
                 <button class="btn-logout" onclick="logout()">
                     Çıkış Yap
-            </button>
+                </button>
         </aside>
 
         <main class="main-content">
             <div class="content-section" style="display: block;">
-                
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
-                    <h1 style="color: #4e342e; margin:0; font-family: 'Playfair Display'; font-size: 2rem;">Kitap Yönetimi</h1>
-                    
-                    <button style="padding: 10px 24px; font-size: 0.95rem; border-radius: 6px; cursor: pointer; background-color: #7b1e1e; color: white; border: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
-                        onmouseover="this.style.backgroundColor='#5a1616'" 
-                        onmouseout="this.style.backgroundColor='#7b1e1e'"
-                        onclick="openBookModal()">+ Yeni Kitap</button>
+
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
+                    <h1 style="color: #4e342e; margin:0; font-family: 'Playfair Display'; font-size: 2rem;">Kitap
+                        Yönetimi</h1>
+
+                    <button
+                        style="padding: 10px 24px; font-size: 0.95rem; border-radius: 6px; cursor: pointer; background-color: #7b1e1e; color: white; border: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
+                        onmouseover="this.style.backgroundColor='#5a1616'"
+                        onmouseout="this.style.backgroundColor='#7b1e1e'" onclick="openBookModal()">+ Yeni
+                        Kitap</button>
                 </div>
-                
-                <div class="filters-bar" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
-                    
-                    <select id="adminCategoryFilter" onchange="runBookFilters()" style="width: 180px; padding: 10px; border-radius: 8px; border: 1px solid #8d5524; background-color: #b87333; color: white;">
+
+                <div class="filters-bar"
+                    style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+
+                    <select id="adminCategoryFilter" onchange="runBookFilters()"
+                        style="width: 180px; padding: 10px; border-radius: 8px; border: 1px solid #8d5524; background-color: #b87333; color: white;">
                         <option value="all">Tüm Kategoriler</option>
                     </select>
 
-                    <select id="adminAuthorFilter" onchange="runBookFilters()" style="width: 180px; padding: 10px; border-radius: 8px; border: 1px solid #8d5524; background-color: #b87333; color: white;">
+                    <select id="adminAuthorFilter" onchange="runBookFilters()"
+                        style="width: 180px; padding: 10px; border-radius: 8px; border: 1px solid #8d5524; background-color: #b87333; color: white;">
                         <option value="all">Tüm Yazarlar</option>
                     </select>
 
-                    <input type="text" id="adminBookSearch" placeholder="Kitap Ara (Ad, Yazar, ISBN)" onkeyup="runBookFilters()" style="flex: 1; min-width: 200px; padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; margin: 0;">
+                    <input type="text" id="adminBookSearch" placeholder="Kitap Ara (Ad, Yazar, ISBN)"
+                        onkeyup="runBookFilters()"
+                        style="flex: 1; min-width: 200px; padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; margin: 0;">
                 </div>
 
-                <div class="table-container" style="background: #3e2723; padding: 20px; border-radius: 12px; border: 5px solid #5d4037;">
+                <div class="table-container"
+                    style="background: #3e2723; padding: 20px; border-radius: 12px; border: 5px solid #5d4037;">
                     <table id="booksTable" class="history-table">
                         <thead>
                             <tr>
-                                <th style="width: 25%; color: #e6c17a;">Kitap Adı</th>
-                                <th style="width: 20%; color: #e6c17a;">Yazar</th>
-                                <th style="width: 15%; color: #e6c17a;">Kategori</th>
-                                <th style="width: 10%; color: #e6c17a;">Yayın Yılı</th>
-                                <th style="width: 10%; text-align: center; color: #e6c17a;">Stok</th> 
-                                <th style="width: 10%; color: #e6c17a;">Durum</th>
-                                <th style="width: 140px; text-align: center; color: #e6c17a;">İşlemler</th>
+                                <th style="width: 18%; color: #e6c17a;">Kitap Adı</th>
+                                <th style="width: 14%; color: #e6c17a;">Yazar</th>
+                                <th style="width: 10%; color: #e6c17a;">Kategori</th>
+                                <th style="width: 8%; color: #e6c17a;">Yayın Yılı</th>
+                                <th style="width: 20%; text-align: center; color: #e6c17a;">Şube & Stok</th>
+                                <th style="width: 7%; text-align: right; color: #e6c17a;">Durum</th>
+                                <th style="width: 130px; text-align: center; color: #e6c17a;">İşlemler</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -99,67 +126,68 @@
 
     <!-- BOOK MODAL -->
     <div id="bookModal" class="modal-overlay hidden">
-            <div class="table-container" style="width: 600px; max-width: 90%;">
-                <div style="background: #f5efea; padding: 30px; border-radius: 8px; color: #374151;">
-                    <h2 id="modalTitle"
-                        style="margin-top:0; color: #4e342e; border-bottom: 2px solid #5d4037; padding-bottom: 10px; margin-bottom: 20px; font-family: 'Playfair Display', serif;">
-                        Kitap Ekle</h2>
+        <div class="table-container" style="width: 600px; max-width: 90%;">
+            <div style="background: #f5efea; padding: 30px; border-radius: 8px; color: #374151;">
+                <h2 id="modalTitle"
+                    style="margin-top:0; color: #4e342e; border-bottom: 2px solid #5d4037; padding-bottom: 10px; margin-bottom: 20px; font-family: 'Playfair Display', serif;">
+                    Kitap Ekle</h2>
 
-                    <div id="bookErrorMsg" class="message-box error" style="display:none; margin-bottom: 15px;"></div>
+                <div id="bookErrorMsg" class="message-box error" style="display:none; margin-bottom: 15px;"></div>
 
-                    <input type="hidden" id="bookId">
+                <input type="hidden" id="bookId">
 
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">Kitap
-                            Adı</label>
-                        <input type="text" id="bookTitle"
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">Kitap
+                        Adı</label>
+                    <input type="text" id="bookTitle"
+                        style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">Yazar</label>
+                    <input type="text" id="bookAuthorName"
+                        style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;">
+                </div>
+
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:15px; margin-bottom: 15px;">
+                    <div>
+                        <label
+                            style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">ISBN</label>
+                        <input type="text" id="bookIsbn"
                             style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;">
                     </div>
-
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">Yazar</label>
-                        <input type="text" id="bookAuthorName"
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">Yayın
+                            Yılı</label>
+                        <input type="number" id="bookYear"
                             style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;">
                     </div>
-
-                    <div style="display:grid; grid-template-columns: 2fr 1.5fr 100px; gap:15px; margin-bottom: 15px;">
-                        <div>
-                            <label
-                                style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">ISBN</label>
-                            <input type="text" id="bookIsbn"
-                                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;">
-                        </div>
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">Yayın
-                                Yılı</label>
-                            <input type="number" id="bookYear"
-                                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;">
-                        </div>
-                        <div>
-                        <label style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">Stok Adedi</label>
-                        <input type="number" id="bookStock" min="1" value="1"
-                            style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; text-align: center;">
-                    </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 25px;">
+                    <div class="form-group">
                         <label
                             style="display: block; margin-bottom: 5px; color: #5d4037; font-weight: 600;">Kategori</label>
                         <select id="bookCategory"
                             style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff !important; color: #374151 !important;"></select>
                     </div>
+                </div>
 
-                    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top: 20px;">
-                        <button onclick="document.getElementById('bookModal').classList.add('hidden')"
-                            style="padding: 10px 24px; background: #374151; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">İptal</button>
-                        <button onclick="saveBook()" class="btn-primary-design"
-                            style="padding: 10px 24px; font-weight: 600; background-color: #7b1e1e; color: white; border: none; border-radius: 8px;">Kaydet</button>
+                <div style="margin-bottom: 20px;">
+                    <div id="branchStocksContainer"
+                        style="background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px;">
+                        <!-- Şube stokları JavaScript ile doldurulacak -->
                     </div>
+                </div>
+
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top: 20px;">
+                    <button onclick="document.getElementById('bookModal').classList.add('hidden')"
+                        style="padding: 10px 24px; background: #374151; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">İptal</button>
+                    <button onclick="saveBook()" class="btn-primary-design"
+                        style="padding: 10px 24px; font-weight: 600; background-color: #7b1e1e; color: white; border: none; border-radius: 8px;">Kaydet</button>
                 </div>
             </div>
         </div>
+    </div>
 
-    <script src="../js/admin.js"></script>
+    <script src="../js/admin.js?v=10"></script>
     <script>
         window.onload = function () {
             loadBooks();
@@ -167,4 +195,5 @@
         }
     </script>
 </body>
+
 </html>

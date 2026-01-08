@@ -61,7 +61,7 @@ public class BookService {
         // Önce kitabı kaydet
         Book savedBook = bookRepository.save(book);
 
-       // 2. Şube Bilgisini Al (Eğer request'te yoksa varsayılan 1. şubeyi seç)
+        // 2. Şube Bilgisini Al (Eğer request'te yoksa varsayılan 1. şubeyi seç)
         Long branchId = request.getBranchId();
         if (branchId == null) {
             branchId = 1L; // Varsayılan Şube ID (Merkez)
@@ -112,7 +112,7 @@ public class BookService {
         // Request'ten gelmezse varsayılan olarak 1 (Merkez) kabul et
         Long branchId = request.getBranchId();
         if (branchId == null) {
-            branchId = 1L; 
+            branchId = 1L;
         }
 
         Branch branch = branchRepository.findById(branchId)
@@ -130,20 +130,20 @@ public class BookService {
         }
         inventoryRepository.save(inventory);
 
-    // Stok durumuna göre 'available' (müsaitlik) bilgisini güncelle
-    // Stok > 0 ise true, değilse false
-    // Kitabın 'available' durumunu güncelle
-    boolean isAvailable = request.getStock() > 0;
-    
-    // Sadece durum değiştiyse işlem yap, yoksa veritabanını yorma
-    if (book.isAvailable() != isAvailable) {
-        book.setAvailable(isAvailable);
-        // Cascade sorunu yaşamamak için save işlemini dikkatli yapıyoruz
-        bookRepository.save(book);
-    }
+        // Stok durumuna göre 'available' (müsaitlik) bilgisini güncelle
+        // Stok > 0 ise true, değilse false
+        // Kitabın 'available' durumunu güncelle
+        boolean isAvailable = request.getStock() > 0;
 
-    return book;
-}
+        // Sadece durum değiştiyse işlem yap, yoksa veritabanını yorma
+        if (book.isAvailable() != isAvailable) {
+            book.setAvailable(isAvailable);
+            // Cascade sorunu yaşamamak için save işlemini dikkatli yapıyoruz
+            bookRepository.save(book);
+        }
+
+        return book;
+    }
 
     public void deleteBook(Long id) {
         Book book = bookRepository.findById(id).orElse(null);

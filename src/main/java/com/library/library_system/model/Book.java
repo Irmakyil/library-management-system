@@ -19,12 +19,11 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
-
 @Entity // Bu class'ın bir veritabanı tablosu olduğunu söyler
 @Table(name = "books") // Veritabanında tablonun adı 'books' olsun
 public class Book {
 
-    @Id // Bu alanın Primary Key  olduğunu belirtir
+    @Id // Bu alanın Primary Key olduğunu belirtir
     @GeneratedValue(strategy = GenerationType.IDENTITY) // ID'yi veritabanı otomatik 1, 2, 3 diye artırsın
     private Long id;
 
@@ -51,10 +50,9 @@ public class Book {
     @JoinColumn(name = "category_id") // Veritabanında 'category_id' adında bir sütun oluşacak
     private Category category;
 
-    @OneToMany(mappedBy = "book", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
+    @OneToMany(mappedBy = "book", cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH })
     @JsonIgnore // Kitap listesini çekerken sonsuz döngüye girmesin ve performans artsın
     private List<Inventory> inventories;
-
 
     // --- Constructor (Boş) ---
     public Book() {
@@ -72,33 +70,90 @@ public class Book {
 
     // --- Getter ve Setter Metotları ---
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Author getAuthor() { return author; }
-    public void setAuthor(Author author) { this.author = author; }
+    public String getTitle() {
+        return title;
+    }
 
-    public String getIsbn() { return isbn; }
-    public void setIsbn(String isbn) { this.isbn = isbn; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public int getPublicationYear() { return publicationYear; }
-    public void setPublicationYear(int publicationYear) { this.publicationYear = publicationYear; }
+    public Author getAuthor() {
+        return author;
+    }
 
-    public boolean isAvailable() { return available; }
-    public void setAvailable(boolean available) { this.available = available; }
+    public void setAuthor(Author author) {
+        this.author = author;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getIsbn() {
+        return isbn;
+    }
 
-    public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
 
-    public List<Inventory> getInventories() {return inventories;}
+    public int getPublicationYear() {
+        return publicationYear;
+    }
 
-    public void setInventories(List<Inventory> inventories) {this.inventories = inventories;}
+    public void setPublicationYear(int publicationYear) {
+        this.publicationYear = publicationYear;
+    }
+
+    public boolean isAvailable() {
+        return available;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+
+    public List<Inventory> getInventories() {
+        return inventories;
+    }
+
+    public void setInventories(List<Inventory> inventories) {
+        this.inventories = inventories;
+    }
+
+    // inventory bilgisi döndürme
+    public java.util.Map<String, Object> getInventory() {
+        int totalStock = 0;
+        if (inventories != null) {
+            for (Inventory inv : inventories) {
+                totalStock += inv.getStockQuantity();
+            }
+        }
+        java.util.Map<String, Object> inventoryData = new java.util.HashMap<>();
+        inventoryData.put("stockQuantity", totalStock);
+        return inventoryData;
+    }
 
     @PreUpdate
     @PrePersist

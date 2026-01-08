@@ -10,7 +10,7 @@ public class BookRequest {
     private String isbn;
     private int publicationYear;
     private Long categoryId;
-    private int stockQuantity; 
+    private int stockQuantity;
     private Long branchId;
 
     // Getters and Setters
@@ -54,19 +54,19 @@ public class BookRequest {
         this.categoryId = categoryId;
     }
 
-    public int getStock() { 
-        return stockQuantity; 
+    public int getStock() {
+        return stockQuantity;
     }
 
-    public void setStock(int stock) { 
+    public void setStock(int stock) {
         this.stockQuantity = stock;
     }
 
-    public Long getBranchId(){
+    public Long getBranchId() {
         return branchId;
     }
 
-    public void setBranchId(Long branchId){
+    public void setBranchId(Long branchId) {
         this.branchId = branchId;
     }
 }

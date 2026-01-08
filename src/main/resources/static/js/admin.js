@@ -1,6 +1,7 @@
 const API = "http://localhost:8080/api";
 let allCategories = [];
 let allAuthors = [];
+let allBranches = [];
 let allAdminBooks = [];
 let allAdminLoans = [];
 
@@ -68,6 +69,51 @@ async function loadAuthors() {
     } catch (e) {
         console.error("Error loading authors:", e);
     }
+}
+
+async function loadBranches() {
+    try {
+        const res = await fetch(`${API}/branches`);
+        allBranches = await res.json();
+    } catch (e) {
+        console.error("Error loading branches:", e);
+    }
+}
+
+// Şube stok alanlarını modal'a render et
+function renderBranchStockInputs(existingStocks = {}) {
+    const container = document.getElementById("branchStocksContainer");
+    if (!container) return;
+
+    // Başlık satırı
+    let html = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb;">
+            <span style="color: #5d4037; font-weight: 600; font-size: 0.9rem;">Şube Adı</span>
+            <span style="color: #5d4037; font-weight: 600; font-size: 0.9rem; margin-right: 60px;">Stok</span>
+        </div>
+    `;
+
+    // Şube satırları
+    html += allBranches.map(branch => {
+        const currentStock = existingStocks[branch.id] || 0;
+        return `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+                <label style="color: #374151; font-weight: 500;">${branch.name}</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="number" 
+                           id="branchStock_${branch.id}" 
+                           data-branch-id="${branch.id}"
+                           class="branch-stock-input"
+                           min="0" 
+                           value="${currentStock}"
+                           style="width: 60px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; text-align: center; background: #fff;">
+                    <span style="margin-left: 6px; color: #6b7280; font-size: 0.8rem; width: 25px;">adet</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    container.innerHTML = html;
 }
 
 // --- DASHBOARD FUNCTIONS ---
@@ -296,14 +342,31 @@ function renderBooks(books) {
         tr.appendChild(createCell(b.category?.name));
         tr.appendChild(createCell(b.publicationYear));
 
-        // Stok
+        // Toplam stok (durum için kullanılacak)
         const stock = b.inventory ? b.inventory.stockQuantity : 0;
-        const tdStock = createCell(stock);
-        tdStock.style.textAlign = "center";
-        tr.appendChild(tdStock);
+
+        // Şube & Stok
+        const tdBranch = document.createElement("td");
+        tdBranch.style.color = "#3e2723";
+        tdBranch.style.fontWeight = "500";
+        tdBranch.style.fontSize = "0.8rem";
+        tdBranch.style.lineHeight = "1.6";
+        tdBranch.style.textAlign = "center";
+
+        const branches = b.inventory?.branches || [];
+        if (branches.length > 0) {
+            const formattedBranches = branches.map(branch =>
+                branch.replace(/\((\d+)\)/, '($1)')
+            );
+            tdBranch.innerHTML = formattedBranches.join("<br>");
+        } else {
+            tdBranch.textContent = "-";
+        }
+        tr.appendChild(tdBranch);
 
         // Durum
         const tdStatus = document.createElement("td");
+        tdStatus.style.textAlign = "right";
         const statusSpan = document.createElement("span");
         statusSpan.style.padding = "4px 8px";
         statusSpan.style.borderRadius = "4px";
@@ -323,16 +386,17 @@ function renderBooks(books) {
 
         // İşlemler
         const tdActions = document.createElement("td");
-        tdActions.style.textAlign = "right";
+        tdActions.style.textAlign = "center";
+        tdActions.style.whiteSpace = "nowrap";
 
         const btnEdit = document.createElement("button");
         btnEdit.textContent = "Düzenle";
-        btnEdit.style.cssText = "background-color: #143800; color: white; border: 1px solid #143800; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 0.85rem;";
+        btnEdit.style.cssText = "background-color: #143800; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 4px; font-size: 0.8rem;";
         btnEdit.onclick = () => editBook(b);
 
         const btnDelete = document.createElement("button");
         btnDelete.textContent = "Sil";
-        btnDelete.style.cssText = "background-color: #8a1c1c; color: white; border: 1px solid #8a1c1c; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;";
+        btnDelete.style.cssText = "background-color: #8a1c1c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;";
         btnDelete.onclick = () => deleteBook(b.id);
 
         tdActions.appendChild(btnEdit);
@@ -343,17 +407,19 @@ function renderBooks(books) {
 }
 
 // --- BOOKS: MODAL ACTIONS ---
-function openBookModal() {
-    loadCategories(); // Ensure categories are loaded for modal
+async function openBookModal() {
+    await loadCategories(); // Ensure categories are loaded for modal
+    await loadBranches(); // Ensure branches are loaded for modal
     document.getElementById("modalTitle").innerText = "Yeni Kitap Ekle";
     document.getElementById("bookId").value = "";
     document.getElementById("bookTitle").value = "";
     document.getElementById("bookAuthorName").value = "";
     document.getElementById("bookIsbn").value = "";
     document.getElementById("bookYear").value = "";
-    document.getElementById("bookYear").value = "";
     document.getElementById("bookModal").classList.remove("hidden");
-    if (document.getElementById("bookStock")) document.getElementById("bookStock").value = "1";
+
+    // Şube stok alanlarını render et (yeni kitap için hepsi 0)
+    renderBranchStockInputs({});
 
     // Clear error message
     const errorEl = document.getElementById("bookErrorMsg");
@@ -362,6 +428,7 @@ function openBookModal() {
 
 async function editBook(b) {
     await loadCategories(); // Wait for categories to load so options exist
+    await loadBranches(); // Wait for branches to load so options exist
     document.getElementById("modalTitle").innerText = "Kitabı Düzenle";
     document.getElementById("bookId").value = b.id;
     document.getElementById("bookTitle").value = b.title;
@@ -369,13 +436,14 @@ async function editBook(b) {
     document.getElementById("bookIsbn").value = b.isbn;
     document.getElementById("bookYear").value = b.publicationYear;
 
-    if (document.getElementById("bookStock")) {
-        document.getElementById("bookStock").value = b.inventory ? b.inventory.stockQuantity : 0;
-    }
-
     if (b.category && b.category.id) {
         document.getElementById("bookCategory").value = b.category.id.toString();
     }
+
+    // Mevcut şube stoklarını al ve render et
+    const existingStocks = b.inventory?.branchStocks || {};
+    renderBranchStockInputs(existingStocks);
+
     document.getElementById("bookModal").classList.remove("hidden");
 }
 
@@ -383,7 +451,17 @@ async function saveBook() {
     const id = document.getElementById("bookId").value;
     const catVal = document.getElementById("bookCategory").value;
     const yearVal = document.getElementById("bookYear").value;
-    const stockVal = document.getElementById("bookStock")?.value;
+
+    // Tüm şube stoklarını topla
+    const branchStocks = {};
+    const stockInputs = document.querySelectorAll(".branch-stock-input");
+    stockInputs.forEach(input => {
+        const branchId = input.dataset.branchId;
+        const stock = parseInt(input.value) || 0;
+        if (stock > 0) {
+            branchStocks[branchId] = stock;
+        }
+    });
 
     const book = {
         title: document.getElementById("bookTitle").value,
@@ -391,7 +469,7 @@ async function saveBook() {
         isbn: document.getElementById("bookIsbn").value,
         publicationYear: yearVal ? parseInt(yearVal) : 0,
         categoryId: catVal ? catVal : null,
-        stock: stockVal ? parseInt(stockVal) : 0
+        branchStocks: branchStocks
     };
 
     const errorEl = document.getElementById("bookErrorMsg");
@@ -403,6 +481,17 @@ async function saveBook() {
             errorEl.style.display = 'block';
         } else {
             alert("Lütfen tüm alanları doldurun!");
+        }
+        return;
+    }
+
+    // En az bir şubede stok olmalı
+    if (Object.keys(branchStocks).length === 0) {
+        if (errorEl) {
+            errorEl.innerText = "En az bir şubede stok bilgisi giriniz!";
+            errorEl.style.display = 'block';
+        } else {
+            alert("En az bir şubede stok bilgisi giriniz!");
         }
         return;
     }
