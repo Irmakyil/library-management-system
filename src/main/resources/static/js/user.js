@@ -7,8 +7,6 @@ const pageSize = 18;
 let isLoading = false;
 let hasMore = true;
 
-let dashboardActiveLoans = []; // Kullanıcının elindeki kitapları burada tutacağız
-
 // --- AUTH & INIT ---
 document.addEventListener('DOMContentLoaded', () => {
     // Login veya register sayfasında değilsek
@@ -102,28 +100,10 @@ async function updateSidebarPenalty() {
     }
 }
 
-async function refreshUserLoans() {
-    if (!currentUser) return;
-    try {
-        // My-Books sayfasındaki mantığın aynısı
-        const res = await fetch(`${API_BASE}/loans/member/${currentUser.id}`);
-        if (res.ok) {
-            const allLoans = await res.json();
-            // Global listeyi güncelle
-            dashboardActiveLoans = allLoans.filter(loan => loan.returnDate === null);
-            console.log("Liste Tazelendi. Güncel Kitap Sayısı:", dashboardActiveLoans.length);
-        }
-    } catch (e) {
-        console.error("Liste tazelenirken hata:", e);
-    }
-}
-
-
 // --- DASHBOARD (HOME) FUNCTIONS ---
 async function initDashboard() {
     await checkUserAuth();
     updateSidebarPenalty();
-    await refreshUserLoans();
 
     // Her iki veri kümesini paralel olarak getir (Öncelikli İçerik)
     const [recs, booksData] = await Promise.all([
@@ -378,52 +358,19 @@ function renderBooks(books) {
     currentRow.className = "shelf-row";
     shelfContainer.appendChild(currentRow);
 
-    books.forEach((book) => {
-        if (!book) return;
-
-        if (currentRow.children.length >= 18) {
+    books.forEach((book, index) => {
+        if (index > 0 && index % 18 === 0) {
             currentRow = document.createElement("div");
             currentRow.className = "shelf-row";
             shelfContainer.appendChild(currentRow);
         }
 
-        let myLoan = null;
-
-        // Global listeyi kontrol et
-        if (dashboardActiveLoans && dashboardActiveLoans.length > 0) {
-            myLoan = dashboardActiveLoans.find(loan => {
-                // Loan nesnesinin içindeki kitap ID'si nerede?
-                // loadMyLoans'da 'loan.bookId' veya 'loan.book.id' olabilir.
-                let loanBookId = loan.bookId; 
-                if (!loanBookId && loan.book) {
-                    loanBookId = loan.book.id;
-                }
-
-                // String'e çevirerek karşılaştır (Type hatasını önler)
-                return String(loanBookId) === String(book.id);
-            });
-        }
-
-        const isMyBook = (myLoan != null); // Eşleşme bulundu mu?
         const isAvailable = book.available;
-        
-        // Görsel Ayarlar
-        let opacity = "1";
-        let cursor = "pointer";
-        let spineTitle = book.title;
+        const opacity = isAvailable ? "1" : "0.6";
+        const cursor = isAvailable ? "pointer" : "not-allowed";
 
-        if (isMyBook) {
-            // Kitap bizdeyse -> Parlak olsun
-            spineTitle += " (SİZDE)";
-        } else if (!isAvailable) {
-            // Bizde değil ve stok yoksa -> Soluk olsun
-            opacity = "0.6";
-            cursor = "not-allowed";
-            spineTitle += " (Tükendi)";
-        }
-        
-        // Spine Oluşturma
         const spineData = getRandomSpineData(book.id);
+
         const titleLen = book.title.length;
         let dynamicWidth = 35 + (titleLen * 0.8);
         if (dynamicWidth > 65) dynamicWidth = 65;
@@ -435,17 +382,16 @@ function renderBooks(books) {
         spine.style.cursor = cursor;
         spine.style.width = `${dynamicWidth}px`;
         spine.style.minWidth = `${dynamicWidth}px`;
-        spine.title = spineTitle;
+
+        // Use DTO fields: authorName, available (already used)
+        const displayAuthor = book.authorName || (book.author ? book.author.name : "-");
+        spine.title = `${book.title} - ${displayAuthor} (${isAvailable ? 'Müsait' : 'Ödünçte'})`;
+        spine.onclick = () => {
+            openBookModal(book);
+        };
+
         spine.innerText = book.title;
 
-        // --- TIKLAMA OLAYI ---
-        spine.onclick = () => {
-            // Eğer isMyBook true ise myLoan doludur -> Modal 'İADE ET' açar
-            // Eğer isMyBook false ise myLoan null'dır -> Modal 'ÖDÜNÇ AL' açar
-            console.log("Kitap Tıklandı:", book.id, "Bende mi:", isMyBook);
-            openBookModal(book, myLoan);
-        };
-        
         currentRow.appendChild(spine);
     });
 
@@ -814,15 +760,8 @@ async function borrowBook(bookId, branchId) {
 
         if (res.ok) {
             alert("Kitap başarıyla ödünç alındı!");
-
             if (window.location.pathname.includes("dashboard.html")) {
-                // 1. Önce "Bende ne var?" listesini güncelle
-                await refreshUserLoans(); 
-                
-                // 2. Sonra kitapları ve stokları yeniden yükle
-                // (loadAllBooks true ile çağrılırsa listeyi sıfırlar ve yeniden çizer)
-                loadAllBooks(true); 
-                
+                loadAllBooks();
                 loadRecommendations();
                 updateSidebarPenalty();
             }
@@ -854,13 +793,6 @@ async function returnBook(loanId) {
             // Refresh logic depends on page
             if (window.location.pathname.includes("my-books.html")) {
                 loadMyLoans(true);
-            }
-
-            if (window.location.pathname.includes("dashboard.html")) {
-                // 1. Listeyi güncelle 
-                await refreshUserLoans();
-                // 2. Kitapları yeniden diz
-                loadAllBooks(true);
             }
             updateSidebarPenalty();
         } else {
