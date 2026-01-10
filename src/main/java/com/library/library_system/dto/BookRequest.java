@@ -12,6 +12,7 @@ public class BookRequest {
     private Long categoryId;
     private int stockQuantity;
     private Long branchId;
+    private java.util.Map<Long, Integer> branchStocks;
 
     // Getters and Setters
     public String getTitle() {
@@ -68,5 +69,13 @@ public class BookRequest {
 
     public void setBranchId(Long branchId) {
         this.branchId = branchId;
+    }
+
+    public java.util.Map<Long, Integer> getBranchStocks() {
+        return branchStocks;
+    }
+
+    public void setBranchStocks(java.util.Map<Long, Integer> branchStocks) {
+        this.branchStocks = branchStocks;
     }
 }

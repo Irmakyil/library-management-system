@@ -25,6 +25,8 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
         // Bir üyenin, belirli bir kitabı henüz iade edip etmediğini kontrol eder
         boolean existsByMemberIdAndBookIdAndReturnDateIsNull(Long memberId, Long bookId);
 
+        void deleteByBookId(Long bookId);
+
         // Üyenin adı soyadı veya kitabın başlığında geçen ifadeye göre ödünç
         // kayıtlarını arar
         List<Loan> findByMember_FirstNameContainingIgnoreCaseOrMember_LastNameContainingIgnoreCaseOrBook_TitleContainingIgnoreCase(

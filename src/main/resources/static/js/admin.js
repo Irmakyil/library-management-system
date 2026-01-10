@@ -266,7 +266,12 @@ async function openUserDetail(id, name) {
         if (l.returnDate === null) {
             activeDiv.innerHTML += `<div style="padding:10px; background:#f3f4f6; margin-bottom:5px; border-radius:4px; color: #374151;">${bookTitle}</div>`;
         } else {
-            historyDiv.innerHTML += `<div style="padding:10px; background:#f3f4f6; margin-bottom:5px; border-radius:4px; color: #374151;">${bookTitle} <br><span style="font-size:0.8em; color:#6b7280">${l.returnDate}</span></div>`;
+            const dateObj = new Date(l.returnDate);
+            const formattedDate = dateObj.toLocaleDateString("tr-TR", {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            historyDiv.innerHTML += `<div style="padding:10px; background:#f3f4f6; margin-bottom:5px; border-radius:4px; color: #374151;">${bookTitle} <br><span style="font-size:0.8em; color:#6b7280">${formattedDate}</span></div>`;
         }
     });
     document.getElementById('detailTotalPenalty').innerText = `${penalty} TL Ceza`;
@@ -284,6 +289,7 @@ async function loadBooks() {
     checkAdminAuth();
     loadCategories(); // Load for filters
     loadAuthors();    // Load for filters
+    await loadBranches(); // Load for table rendering
     try {
         const res = await fetch(`${API}/books?size=1000`);
         const data = await res.json();
@@ -353,14 +359,25 @@ function renderBooks(books) {
         tdBranch.style.lineHeight = "1.6";
         tdBranch.style.textAlign = "center";
 
-        const branches = b.inventory?.branches || [];
-        if (branches.length > 0) {
-            const formattedBranches = branches.map(branch =>
-                branch.replace(/\((\d+)\)/, '($1)')
-            );
-            tdBranch.innerHTML = formattedBranches.join("<br>");
+        const branchStocks = b.inventory?.branchStocks || {};
+
+        if (allBranches && allBranches.length > 0) {
+            const branchHtml = allBranches.map(br => {
+                const count = branchStocks[br.id] || 0;
+                return `${br.name} (${count})`;
+            }).join("<br>");
+            tdBranch.innerHTML = branchHtml;
         } else {
-            tdBranch.textContent = "-";
+            // Fallback
+            const branches = b.inventory?.branches || [];
+            if (branches.length > 0) {
+                const formattedBranches = branches.map(branch =>
+                    branch.replace(/\((\d+)\)/, '($1)')
+                );
+                tdBranch.innerHTML = formattedBranches.join("<br>");
+            } else {
+                tdBranch.textContent = "-";
+            }
         }
         tr.appendChild(tdBranch);
 
@@ -520,8 +537,16 @@ async function saveBook() {
 
 async function deleteBook(id) {
     if (confirm("Silmek istediğinize emin misiniz?")) {
-        await fetch(`${API}/books/${id}`, { method: "DELETE" });
-        loadBooks();
+        try {
+            const res = await fetch(`${API}/books/${id}`, { method: "DELETE" });
+            if (!res.ok) {
+                alert("Silme işlemi başarısız! Kitap başka kayıtlarla ilişkili olabilir.");
+                return;
+            }
+            loadBooks();
+        } catch (e) {
+            alert("Bir hata oluştu: " + e.message);
+        }
     }
 }
 

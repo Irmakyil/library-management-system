@@ -14,7 +14,8 @@ import com.library.library_system.repository.AuthorRepository;
 import com.library.library_system.repository.BookRepository;
 import com.library.library_system.repository.CategoryRepository;
 import com.library.library_system.repository.InventoryRepository;
-import com.library.library_system.repository.BranchRepository;;
+import com.library.library_system.repository.BranchRepository;
+import com.library.library_system.repository.LoanRepository;
 
 @Service
 @Transactional
@@ -25,18 +26,21 @@ public class BookService {
     private final CategoryRepository categoryRepository;
     private final InventoryRepository inventoryRepository;
     private final BranchRepository branchRepository;
+    private final LoanRepository loanRepository;
 
     // Constructor Dependency Injection
     public BookService(BookRepository bookRepository,
             AuthorRepository authorRepository,
             CategoryRepository categoryRepository,
             InventoryRepository inventoryRepository,
-            BranchRepository branchRepository) {
+            BranchRepository branchRepository,
+            LoanRepository loanRepository) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.categoryRepository = categoryRepository;
         this.inventoryRepository = inventoryRepository;
         this.branchRepository = branchRepository;
+        this.loanRepository = loanRepository;
     }
 
     // Tüm kitapları getir
@@ -61,21 +65,31 @@ public class BookService {
         // Önce kitabı kaydet
         Book savedBook = bookRepository.save(book);
 
-        // 2. Şube Bilgisini Al (Eğer request'te yoksa varsayılan 1. şubeyi seç)
-        Long branchId = request.getBranchId();
-        if (branchId == null) {
-            branchId = 1L; // Varsayılan Şube ID (Merkez)
+        // 3. Envanter (Stok) Kaydını Oluştur
+        // Eğer branchStocks haritası varsa onu kullan, yoksa tekli giriş (fallback) yap
+        if (request.getBranchStocks() != null && !request.getBranchStocks().isEmpty()) {
+            for (java.util.Map.Entry<Long, Integer> entry : request.getBranchStocks().entrySet()) {
+                Long bId = entry.getKey();
+                Integer qty = entry.getValue();
+                if (qty != null && qty > 0) {
+                    Branch br = branchRepository.findById(bId).orElse(null);
+                    if (br != null) {
+                        Inventory inv = new Inventory(savedBook, br, qty);
+                        inventoryRepository.save(inv);
+                    }
+                }
+            }
+        } else {
+            // Eski yöntem (Tek şube)
+            Long branchId = request.getBranchId();
+            if (branchId == null)
+                branchId = 1L;
+            Branch branch = branchRepository.findById(branchId)
+                    .orElseThrow(() -> new RuntimeException("Şube bulunamadı. ID: " + request.getBranchId()));
+            int stock = request.getStock() > 0 ? request.getStock() : 1;
+            Inventory inventory = new Inventory(savedBook, branch, stock);
+            inventoryRepository.save(inventory);
         }
-
-        Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new RuntimeException("Şube bulunamadı. ID: " + request.getBranchId()));
-
-        // 3. Envanter (Stok) Kaydını Oluştur (Kitap + Şube + Stok)
-        // Inventory.java'daki 3 parametreli constructor'ı kullanıyoruz
-        int stock = request.getStock() > 0 ? request.getStock() : 1; // En az 1 tane olsun
-        Inventory inventory = new Inventory(savedBook, branch, stock);
-
-        inventoryRepository.save(inventory);
 
         return savedBook;
     }
@@ -107,39 +121,56 @@ public class BookService {
         updateBookFromRequest(book, request);
 
         // --- STOK GÜNCELLEME KISMI ---
+        if (request.getBranchStocks() != null && !request.getBranchStocks().isEmpty()) {
+            boolean anyStock = false;
+            for (java.util.Map.Entry<Long, Integer> entry : request.getBranchStocks().entrySet()) {
+                Long bId = entry.getKey();
+                Integer qty = entry.getValue();
 
-        // 1. Stoğun hangi şubeye ait olduğunu bul
-        // Request'ten gelmezse varsayılan olarak 1 (Merkez) kabul et
-        Long branchId = request.getBranchId();
-        if (branchId == null) {
-            branchId = 1L;
-        }
+                Branch br = branchRepository.findById(bId).orElse(null);
+                if (br != null) {
+                    Inventory inv = inventoryRepository.findByBookIdAndBranchId(book.getId(), bId);
+                    if (inv == null) {
+                        if (qty != null && qty > 0) {
+                            inv = new Inventory(book, br, qty);
+                            inventoryRepository.save(inv);
+                            anyStock = true;
+                        }
+                    } else {
+                        // Varsa güncelle (0 olsa bile güncelle, stok bitmiş olabilir)
+                        inv.setStockQuantity(qty != null ? qty : 0);
+                        inventoryRepository.save(inv);
+                        if (inv.getStockQuantity() > 0)
+                            anyStock = true;
+                    }
+                }
+            }
+            // Stok durumuna göre available güncelle
+            if (book.isAvailable() != anyStock) {
+                book.setAvailable(anyStock);
+                bookRepository.save(book);
+            }
 
-        Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new RuntimeException("Şube bulunamadı"));
-
-        // 2. Bu kitabın O ŞUBEDEKİ kaydını bul
-        Inventory inventory = inventoryRepository.findByBookIdAndBranchId(book.getId(), branch.getId());
-
-        if (inventory == null) {
-            // Eğer bu şubede bu kitap daha önce hiç yoksa YENİ OLUŞTUR
-            inventory = new Inventory(book, branch, request.getStock());
         } else {
-            // Varsa güncelle
-            inventory.setStockQuantity(request.getStock());
-        }
-        inventoryRepository.save(inventory);
+            // Eski Mantık (Tek Şube update)
+            Long branchId = request.getBranchId();
+            if (branchId == null)
+                branchId = 1L;
+            Branch branch = branchRepository.findById(branchId)
+                    .orElseThrow(() -> new RuntimeException("Şube bulunamadı"));
+            Inventory inventory = inventoryRepository.findByBookIdAndBranchId(book.getId(), branch.getId());
+            if (inventory == null) {
+                inventory = new Inventory(book, branch, request.getStock());
+            } else {
+                inventory.setStockQuantity(request.getStock());
+            }
+            inventoryRepository.save(inventory);
 
-        // Stok durumuna göre 'available' (müsaitlik) bilgisini güncelle
-        // Stok > 0 ise true, değilse false
-        // Kitabın 'available' durumunu güncelle
-        boolean isAvailable = request.getStock() > 0;
-
-        // Sadece durum değiştiyse işlem yap, yoksa veritabanını yorma
-        if (book.isAvailable() != isAvailable) {
-            book.setAvailable(isAvailable);
-            // Cascade sorunu yaşamamak için save işlemini dikkatli yapıyoruz
-            bookRepository.save(book);
+            boolean isAvailable = request.getStock() > 0;
+            if (book.isAvailable() != isAvailable) {
+                book.setAvailable(isAvailable);
+                bookRepository.save(book);
+            }
         }
 
         return book;
@@ -151,10 +182,17 @@ public class BookService {
             return;
         }
 
-        com.library.library_system.model.Author author = book.getAuthor();
+        // 1. İlgili Stokları Sil
+        inventoryRepository.deleteByBookId(id);
+
+        // 2. İlgili Ödünç Kayıtlarını Sil
+        loanRepository.deleteByBookId(id);
+
+        // 3. Kitabı Sil
         bookRepository.deleteById(id);
 
-        // Eğer yazarın başka kitabı kalmadıysa yazarı da sil
+        // 4. (Opsiyonel) Eğer yazarın başka kitabı kalmadıysa yazarı da sil
+        com.library.library_system.model.Author author = book.getAuthor();
         if (author != null) {
             List<Book> remainingBooks = bookRepository.findByAuthorId(author.getId());
             if (remainingBooks.isEmpty()) {
